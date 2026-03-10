@@ -123,7 +123,7 @@ export const supabaseAdapter: DataAdapter = {
 
   async getConversations(filters?: ConversationFilters) {
     let q = supabase
-      .from('analysis_results')
+      .from('qa_analysis')
       .select('*')
       .order('analyzed_at', { ascending: false })
       .limit(500)
@@ -141,7 +141,7 @@ export const supabaseAdapter: DataAdapter = {
 
   async getTickets(filters?: TicketFilters) {
     let q = supabase
-      .from('tickets')
+      .from('qa_tickets')
       .select('*')
       .order('created_at', { ascending: false })
     if (filters?.status)      q = q.eq('status', filters.status)
@@ -154,7 +154,7 @@ export const supabaseAdapter: DataAdapter = {
 
   async updateTicketFeedback(ticketId: string, feedback: FeedbackValue) {
     const { error } = await supabase
-      .from('tickets')
+      .from('qa_tickets')
       .update({ feedback })
       .eq('ticket_id', ticketId)
     if (error) throw error
@@ -162,7 +162,7 @@ export const supabaseAdapter: DataAdapter = {
 
   async getAccuracyMetrics() {
     const { data, error } = await supabase
-      .from('accuracy_log')
+      .from('qa_accuracy')
       .select('*')
       .order('date', { ascending: false })
       .limit(90)
@@ -172,7 +172,7 @@ export const supabaseAdapter: DataAdapter = {
 
   async getReports() {
     const { data, error } = await supabase
-      .from('monthly_reports')
+      .from('qa_monthly_reports')
       .select('*')
       .order('month', { ascending: false })
     if (error) throw error
@@ -181,7 +181,7 @@ export const supabaseAdapter: DataAdapter = {
 
   async approveReport(month: string) {
     const { error } = await supabase
-      .from('monthly_reports')
+      .from('qa_monthly_reports')
       .update({ status: 'approved' })
       .eq('month', month)
     if (error) throw error
@@ -200,30 +200,30 @@ export const supabaseAdapter: DataAdapter = {
       { data: weekRows },
     ] = await Promise.all([
       supabase
-        .from('analysis_results')
+        .from('qa_analysis')
         .select('severity')
         .gte('analyzed_at', today + 'T00:00:00Z'),
       supabase
-        .from('tickets')
+        .from('qa_tickets')
         .select('ticket_id', { count: 'exact', head: true })
         .eq('status', 'Open'),
       supabase
-        .from('alert_log')
+        .from('qa_alerts')
         .select('alert_id', { count: 'exact', head: true })
         .eq('date', today),
       supabase
-        .from('alert_log')
+        .from('qa_alerts')
         .select('*')
         .order('date', { ascending: false })
         .limit(5),
       supabase
-        .from('accuracy_log')
+        .from('qa_accuracy')
         .select('date,accuracy_rate')
         .or('language.eq.all,language.is.null')
         .gte('date', sevenDaysAgo)
         .order('date', { ascending: false }),
       supabase
-        .from('analysis_results')
+        .from('qa_analysis')
         .select('analyzed_at,severity')
         .gte('analyzed_at', sevenDaysAgo + 'T00:00:00Z')
         .order('analyzed_at', { ascending: false }),
@@ -265,7 +265,7 @@ export const supabaseAdapter: DataAdapter = {
     const fourteenDaysAgo = dayStr(13)
 
     const { data, error } = await supabase
-      .from('analysis_results')
+      .from('qa_analysis')
       .select('analyzed_at,severity,issue_category,agent_name,agent_score,player_id')
       .gte('analyzed_at', fourteenDaysAgo + 'T00:00:00Z')
       .order('analyzed_at', { ascending: false })
