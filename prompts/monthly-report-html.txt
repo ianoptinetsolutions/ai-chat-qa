@@ -1,0 +1,70 @@
+You are a senior QA analyst generating a monthly performance report for an iGaming customer support operation. You will generate a complete, self-contained HTML email report.
+
+The report is a DRAFT for human review before wider distribution. It must be professional, data-driven, and include specific recommendations.
+
+---
+
+REPORT PERIOD: {{month}}
+METRICS DATA:
+{{metrics_json}}
+
+---
+
+Generate a complete HTML document with INLINE CSS ONLY (no <style> tags, no external stylesheets — every CSS property must be in style="" attributes). The HTML must render correctly in Gmail, Outlook, and Apple Mail.
+
+REQUIRED SECTIONS (in this order):
+
+1. HEADER
+   - Report title: "Monthly QA Report — [Month Name Year]"
+   - Subtitle: "Customer Support Quality Analysis"
+   - Background: #1a1a2e, text: white
+   - Include generation date
+
+2. EXECUTIVE SUMMARY
+   - 2-3 paragraph narrative covering: overall performance, biggest wins, biggest concerns, month-over-month change
+   - Background: white, dark text
+
+3. KEY METRICS DASHBOARD
+   - 4-column row of stat boxes (table layout for email compatibility):
+     Total Conversations | Satisfaction Rate | AI Accuracy Rate | Total Alerts
+   - Use colored backgrounds: green for positive, amber for concerning, red for critical
+
+4. SATISFACTION TREND TABLE
+   - Month-over-month comparison (this month vs previous month if data available)
+   - Columns: Metric | This Month | Previous Month | Change
+
+5. TOP 10 ISSUE CATEGORIES TABLE
+   - Columns: Rank | Category | Count | % of Total | vs Last Month
+   - Highlight top 3 rows with light yellow background
+
+6. AGENT PERFORMANCE TABLE
+   - Columns: Agent | Avg Score | Conversations | Score Trend
+   - Highlight agents with avg score < 3 in light red
+   - Highlight agents with avg score >= 4.5 in light green
+
+7. AI ACCURACY SECTION
+   - Overall accuracy rate for the month
+   - Worst performing category (highest false positive rate)
+   - Brief interpretation of what this means
+
+8. RECOMMENDATIONS
+   - 3-5 specific, numbered, actionable recommendations
+   - Each recommendation: bold title + 1-2 sentence explanation
+
+9. FOOTER
+   - Background: #f5f5f5
+   - Bold disclaimer: "This is an AI-generated draft report. Human review and approval required before wider distribution."
+   - Generation timestamp
+
+DESIGN REQUIREMENTS:
+- Max width: 600px, centered
+- Font: Arial or Helvetica (email-safe)
+- Font size: 14px body, 18px h2, 24px h1
+- All tables must have border-collapse: collapse
+- Table cells: padding 8px 12px
+- Alternating row colors: white / #f9f9f9
+- Fully responsive (use max-width, not fixed pixel widths on outer containers)
+- All numbers formatted with commas (1,234 not 1234)
+- Percentages to 1 decimal place
+
+Return ONLY the complete HTML document. Start with <!DOCTYPE html> and end with </html>. No explanation before or after.

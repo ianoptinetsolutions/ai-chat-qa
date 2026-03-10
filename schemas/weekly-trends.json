@@ -1,0 +1,15 @@
+{
+  "tab": "Weekly_Trends",
+  "description": "One row per daily pattern detection run (7-day rolling window). Retention: Indefinite.",
+  "columns": [
+    { "col": "A", "name": "week_start",          "type": "date",   "note": "7 days ago from today (YYYY-MM-DD)" },
+    { "col": "B", "name": "week_end",            "type": "date",   "note": "Today's date (YYYY-MM-DD)" },
+    { "col": "C", "name": "top_issues_json",     "type": "string", "note": "JSON array: [{category, count, daily_avg, pct_change}]" },
+    { "col": "D", "name": "anomalies_json",      "type": "string", "note": "JSON array of spiked categories (>150% of 7-day avg)" },
+    { "col": "E", "name": "repeat_complainers",  "type": "integer","note": "Count of unique players with 3+ complaints in window" },
+    { "col": "F", "name": "trend_summary",       "type": "string", "note": "AI-generated plain text trend narrative" },
+    { "col": "G", "name": "recommendations",     "type": "string", "note": "AI-generated specific action recommendations" }
+  ],
+  "dedup_key": "week_end",
+  "retention_days": null
+}

@@ -1,0 +1,17 @@
+{
+  "tab": "Accuracy_Log",
+  "description": "Aggregated AI accuracy metrics from team leader ticket feedback. Populated by WF7. Retention: Indefinite.",
+  "columns": [
+    { "col": "A", "name": "date",            "type": "date",    "note": "Date this accuracy batch was processed (YYYY-MM-DD)" },
+    { "col": "B", "name": "total_reviewed",  "type": "integer", "note": "Total tickets reviewed in this batch" },
+    { "col": "C", "name": "agreed",          "type": "integer", "note": "Tickets where team leader marked Agree" },
+    { "col": "D", "name": "disagreed",       "type": "integer", "note": "Tickets where team leader marked Disagree (false positives)" },
+    { "col": "E", "name": "accuracy_rate",   "type": "float",   "note": "agreed / total_reviewed (0-1)" },
+    { "col": "F", "name": "worst_category",  "type": "string",  "note": "Issue category with highest disagreement rate" },
+    { "col": "G", "name": "notes",           "type": "string",  "note": "Auto-generated summary of accuracy batch" },
+    { "col": "H", "name": "language",       "type": "string",  "note": "Language scope: 'all' for global accuracy row, ISO 639-1 code for per-language rows (ar, de, el, en, fi, fr, it, no, pt)" }
+  ],
+  "dedup_key": null,
+  "retention_days": null,
+  "notes": "Multiple rows per date possible (WF7 runs every 6 hours)"
+}

@@ -1,0 +1,25 @@
+{
+  "tab": "Analysis_Results",
+  "description": "Stores Claude AI analysis output per conversation. Retention: Indefinite.",
+  "columns": [
+    { "col": "A",  "name": "conversation_id",       "type": "string",   "note": "Intercom conversation ID (links to Raw_Conversations)" },
+    { "col": "B",  "name": "player_id",             "type": "string",   "note": "Contact external_id" },
+    { "col": "C",  "name": "agent_name",            "type": "string",   "note": "Agent who handled the conversation" },
+    { "col": "D",  "name": "summary",               "type": "string",   "note": "1-3 sentence AI-generated summary of the conversation" },
+    { "col": "E",  "name": "severity",              "type": "string",   "note": "Low | Medium | High | Critical" },
+    { "col": "F",  "name": "issue_category",        "type": "string",   "note": "Payment/Withdrawal | Game Bug | Login/Account | Bonus/Promotion | Technical Error | Slow Response | Inappropriate Communication | Other" },
+    { "col": "G",  "name": "resolution_status",     "type": "string",   "note": "Resolved | Unresolved | Partially Resolved (content-based, not Intercom status)" },
+    { "col": "H",  "name": "key_quotes",            "type": "string",   "note": "JSON array of 1-3 direct player quotes" },
+    { "col": "I",  "name": "agent_score",           "type": "integer",  "note": "Agent performance: 1 (Poor) to 5 (Exceptional). NULL for bot-handled conversations." },
+    { "col": "J",  "name": "agent_notes",           "type": "string",   "note": "AI notes on agent performance. 'N/A — conversation handled by bot' for bot-handled conversations." },
+    { "col": "K",  "name": "recommended_action",    "type": "string",   "note": "Specific action QA team should take. For bot convos: bot/product improvement recommendation." },
+    { "col": "L",  "name": "is_alert",              "type": "boolean",  "note": "TRUE if conversation triggered a critical alert" },
+    { "col": "M",  "name": "alert_reason",          "type": "string",   "note": "Why alert was triggered (null if is_alert=false)" },
+    { "col": "N",  "name": "is_bot_handled",        "type": "boolean",  "note": "TRUE if no human agent replied — mirrors qa_conversations.is_bot_handled. Use to split agent vs bot metrics." },
+    { "col": "O",  "name": "analyzed_at",           "type": "datetime", "note": "When WF2 analyzed this record (ISO 8601)" },
+    { "col": "P",  "name": "intercom_link",         "type": "string",   "note": "Direct URL to conversation in Intercom" },
+    { "col": "Q",  "name": "language",              "type": "string",   "note": "ISO 639-1 language code detected by Claude (ar, de, el, en, fi, fr, it, no, pt). All output fields are in English regardless of conversation language." }
+  ],
+  "dedup_key": "conversation_id",
+  "retention_days": null
+}

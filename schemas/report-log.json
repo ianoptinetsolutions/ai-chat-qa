@@ -1,0 +1,16 @@
+{
+  "tab": "Report_Log",
+  "description": "One row per daily report run. Retention: Indefinite.",
+  "columns": [
+    { "col": "A", "name": "date",              "type": "date",    "note": "Report date YYYY-MM-DD" },
+    { "col": "B", "name": "total_analyzed",    "type": "integer", "note": "Total conversations analyzed that day" },
+    { "col": "C", "name": "critical_count",    "type": "integer", "note": "Number of Critical severity conversations" },
+    { "col": "D", "name": "high_count",        "type": "integer", "note": "Number of High severity conversations" },
+    { "col": "E", "name": "medium_count",      "type": "integer", "note": "Number of Medium severity conversations" },
+    { "col": "F", "name": "low_count",         "type": "integer", "note": "Number of Low severity conversations" },
+    { "col": "G", "name": "satisfaction_rate", "type": "float",   "note": "Percentage of Low severity (satisfied) conversations (0-100)" },
+    { "col": "H", "name": "sent_at",           "type": "datetime","note": "When the daily email report was sent (ISO 8601)" }
+  ],
+  "dedup_key": "date",
+  "retention_days": null
+}

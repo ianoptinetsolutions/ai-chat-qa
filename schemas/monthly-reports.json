@@ -1,0 +1,17 @@
+{
+  "tab": "Monthly_Reports",
+  "description": "One row per monthly report. Stores report HTML and metadata. Retention: Indefinite.",
+  "columns": [
+    { "col": "A", "name": "month",               "type": "string",   "note": "Month identifier YYYY-MM (e.g. 2026-02)" },
+    { "col": "B", "name": "total_conversations", "type": "integer",  "note": "Total conversations analyzed in the month" },
+    { "col": "C", "name": "satisfaction_rate",   "type": "float",    "note": "Average satisfaction rate for the month (0-100)" },
+    { "col": "D", "name": "top_issues",          "type": "string",   "note": "JSON array of top 10 issue categories with counts" },
+    { "col": "E", "name": "accuracy_rate",       "type": "float",    "note": "Average AI accuracy rate for the month (0-1)" },
+    { "col": "F", "name": "report_html",         "type": "string",   "note": "Full AI-generated HTML report content" },
+    { "col": "G", "name": "status",              "type": "string",   "note": "draft | approved (human sets to approved after review)" },
+    { "col": "H", "name": "generated_at",        "type": "datetime", "note": "When WF8 generated this report (ISO 8601)" }
+  ],
+  "dedup_key": "month",
+  "retention_days": null,
+  "notes": "Status starts as 'draft'. QA Manager updates to 'approved' after human review before wider distribution."
+}

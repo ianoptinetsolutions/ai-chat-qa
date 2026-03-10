@@ -1,0 +1,19 @@
+{
+  "tab": "Raw_Conversations",
+  "description": "Stores raw Intercom conversation data collected daily. Retention: 90 days.",
+  "columns": [
+    { "col": "A", "name": "conversation_id",  "type": "string",    "note": "Intercom conversation ID (unique key)" },
+    { "col": "B", "name": "player_id",        "type": "string",    "note": "Contact external_id from Intercom" },
+    { "col": "C", "name": "agent_name",       "type": "string",    "note": "First human agent who replied" },
+    { "col": "D", "name": "transcript",       "type": "string",    "note": "Full formatted conversation, one message per line: [timestamp] ROLE: message" },
+    { "col": "E", "name": "tags",             "type": "string",    "note": "Comma-separated Intercom tags" },
+    { "col": "F", "name": "created_at",       "type": "datetime",  "note": "Conversation start time (ISO 8601)" },
+    { "col": "G", "name": "collected_at",     "type": "datetime",  "note": "When WF1 collected this record (ISO 8601)" },
+    { "col": "H", "name": "status",           "type": "string",    "note": "closed | re-opened. Re-opened triggers re-analysis in WF2." },
+    { "col": "I", "name": "intercom_link",    "type": "string",    "note": "Direct URL to conversation in Intercom inbox" },
+    { "col": "J", "name": "is_bot_handled",   "type": "boolean",   "note": "TRUE if no human agent replied — conversation was fully handled by bot (Intercom Fin or custom bot)" },
+    { "col": "K", "name": "language",         "type": "string",    "note": "ISO 639-1 language code detected by Claude during WF2 analysis (ar, de, el, en, fi, fr, it, no, pt). Null until analyzed." }
+  ],
+  "dedup_key": "conversation_id",
+  "retention_days": 90
+}

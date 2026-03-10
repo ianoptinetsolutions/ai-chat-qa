@@ -1,0 +1,13 @@
+{
+  "tab": "Agent_Team_Mapping",
+  "description": "Maps support agents to their team leaders for ticket routing. Maintained manually by client.",
+  "columns": [
+    { "col": "A", "name": "agent_name",           "type": "string", "note": "Agent display name (must match agent_name in Analysis_Results exactly)" },
+    { "col": "B", "name": "agent_email",          "type": "string", "note": "Agent email address" },
+    { "col": "C", "name": "team_leader_name",     "type": "string", "note": "Team leader full name" },
+    { "col": "D", "name": "team_leader_slack_id", "type": "string", "note": "Team leader Slack user ID (e.g. U012AB3CD) for DM routing" }
+  ],
+  "dedup_key": "agent_name",
+  "retention_days": null,
+  "notes": "If an agent is not found in this sheet, tickets fall back to assigned_to = 'QA-Inbox'"
+}
