@@ -1,0 +1,87 @@
+{
+  "name": "WF5 - Real-Time Critical Alerts",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "b6c7d8e9-f0a1-4b2c-3d4e-5f6a7b8c9d0e",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [100, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst { randomUUID } = require('crypto');\nfunction parseKeyQuotes(raw) { if (!raw) return []; try { const p = JSON.parse(raw); return Array.isArray(p) ? p : [String(p)]; } catch { return raw.split(',').map(s => s.trim()).filter(Boolean); } }\nfunction escHtml(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;'); }\nconst alertId = randomUUID();\nconst now = new Date();\nconst timestamp = now.toISOString();\nconst dateStr = now.toISOString().split('T')[0];\nconst conversationId = data.conversation_id || '';\nconst playerId = data.player_id || '';\nconst agentName = data.agent_name || '';\nconst severity = data.severity || 'Critical';\nconst issueCategory = data.issue_category || 'Other';\nconst summary = data.summary || '';\nconst alertReason = data.alert_reason || 'Critical issue detected';\nconst keyQuotes = parseKeyQuotes(data.key_quotes);\nconst recommendedAction = data.recommended_action || '';\nconst intercomLink = data.intercom_link || '';\nconst quotesText = keyQuotes.length > 0 ? keyQuotes.map(q => `_\"${q}\"_`).join('\\n') : '_No direct quotes_';\nconst slack_blocks = [{ type: 'header', text: { type: 'plain_text', text: ':rotating_light: CRITICAL ALERT - Immediate Action Required', emoji: true } }, { type: 'section', text: { type: 'mrkdwn', text: `*Alert:* ${alertReason}\\n*Conversation:* ${conversationId}\\n*Player:* ${playerId} | *Agent:* ${agentName}` } }, { type: 'divider' }, { type: 'section', text: { type: 'mrkdwn', text: `*Summary:*\\n${summary}` } }, { type: 'section', text: { type: 'mrkdwn', text: `*Player Quotes:*\\n${quotesText}` } }, { type: 'section', text: { type: 'mrkdwn', text: `*Recommended Action:*\\n${recommendedAction}` } }, { type: 'actions', elements: [{ type: 'button', text: { type: 'plain_text', text: 'View Conversation', emoji: true }, url: intercomLink || 'https://app.intercom.com', style: 'danger' }] }, { type: 'context', elements: [{ type: 'mrkdwn', text: `Alert ID: ${alertId} | ${timestamp}` }] }];\nconst gmail_subject = `[CRITICAL ALERT] ${issueCategory} - Player ${playerId} - ${dateStr}`;\nconst gmail_html = `<!DOCTYPE html><html><body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px\"><div style=\"background:#dc2626;color:white;padding:20px;border-radius:8px 8px 0 0\"><h1 style=\"margin:0;font-size:22px\">CRITICAL ALERT - Immediate Action Required</h1></div><div style=\"background:#fff5f5;border:2px solid #dc2626;border-top:none;padding:20px;border-radius:0 0 8px 8px\"><p><strong>Alert Reason:</strong> <span style=\"color:#dc2626\">${escHtml(alertReason)}</span></p><p><strong>Conversation ID:</strong> ${escHtml(conversationId)}</p><p><strong>Player:</strong> ${escHtml(playerId)} | <strong>Agent:</strong> ${escHtml(agentName)}</p><p><strong>Category:</strong> ${escHtml(issueCategory)} | <strong>Severity:</strong> ${escHtml(severity)}</p><h3>Summary</h3><p>${escHtml(summary)}</p><h3>Key Quotes</h3><ul>${keyQuotes.map(q => `<li><em>${escHtml(q)}</em></li>`).join('')}</ul><h3>Recommended Action</h3><p style=\"background:#fef9c3;padding:12px;border-radius:4px;font-weight:bold\">${escHtml(recommendedAction)}</p><div style=\"text-align:center;margin-top:24px\"><a href=\"${intercomLink}\" style=\"background:#dc2626;color:white;padding:12px 24px;text-decoration:none;border-radius:4px;font-weight:bold\">View in Intercom</a></div><p style=\"color:#6b7280;font-size:12px;margin-top:20px\">Alert ID: ${alertId} | ${timestamp}</p></div></body></html>`;\nreturn [{ json: { alert_id: alertId, date: dateStr, conversation_id: conversationId, player_id: playerId, alert_reason: alertReason, severity, notified_to: 'slack:#critical-alerts, stakeholders-email', responded: false, response_time: '', slack_blocks, slack_text: `:rotating_light: CRITICAL ALERT: ${alertReason} - Player ${playerId}`, gmail_subject, gmail_html, timestamp } }];"
+      },
+      "id": "c7d8e9f0-a1b2-4c3d-4e5f-6a7b8c9d0e1f",
+      "name": "Format Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [320, 300]
+    },
+    {
+      "parameters": {
+        "operation": "post",
+        "channel": "={{ $env.SLACK_CHANNEL_ALERTS }}",
+        "text": "={{ $json.slack_text }}",
+        "blocksUi": "={{ JSON.stringify($json.slack_blocks) }}",
+        "otherOptions": {}
+      },
+      "id": "d8e9f0a1-b2c3-4d4e-5f6a-7b8c9d0e1f2a",
+      "name": "Post to Slack Critical Alerts",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [540, 300],
+      "credentials": {"slackApi": {"id": "slack_api", "name": "slack_api"}}
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "sendTo": "={{ $env.STAKEHOLDERS_EMAIL }}",
+        "subject": "={{ $json.gmail_subject }}",
+        "message": "={{ $json.gmail_html }}",
+        "options": {}
+      },
+      "id": "e9f0a1b2-c3d4-4e5f-6a7b-8c9d0e1f2a3b",
+      "name": "Send Critical Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [760, 300],
+      "credentials": {"gmailOAuth2": {"id": "gmail_oauth", "name": "gmail_oauth"}}
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "tableId": "alert_log",
+        "fieldsUi": {
+          "fieldValues": [
+            {"fieldId": "alert_id", "fieldValue": "={{ $json.alert_id }}"},
+            {"fieldId": "date", "fieldValue": "={{ $json.date }}"},
+            {"fieldId": "conversation_id", "fieldValue": "={{ $json.conversation_id }}"},
+            {"fieldId": "player_id", "fieldValue": "={{ $json.player_id }}"},
+            {"fieldId": "alert_reason", "fieldValue": "={{ $json.alert_reason }}"},
+            {"fieldId": "severity", "fieldValue": "={{ $json.severity }}"},
+            {"fieldId": "notified_to", "fieldValue": "={{ $json.notified_to }}"},
+            {"fieldId": "responded", "fieldValue": "=false"},
+            {"fieldId": "response_time", "fieldValue": "="}
+          ]
+        }
+      },
+      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
+      "id": "f0a1b2c3-d4e5-4f6a-7b8c-9d0e1f2a3b4c",
+      "name": "Log to Alert Log",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [980, 300]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {"main": [[{"node": "Format Alert", "type": "main", "index": 0}]]},
+    "Format Alert": {"main": [[{"node": "Post to Slack Critical Alerts", "type": "main", "index": 0}]]},
+    "Post to Slack Critical Alerts": {"main": [[{"node": "Send Critical Gmail", "type": "main", "index": 0}]]},
+    "Send Critical Gmail": {"main": [[{"node": "Log to Alert Log", "type": "main", "index": 0}]]}
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "id": "wf5-critical-alerts"
+}

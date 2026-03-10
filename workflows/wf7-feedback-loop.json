@@ -1,0 +1,161 @@
+{
+  "name": "WF7 - Feedback Loop Processing",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{"field": "cronExpression", "expression": "0 */6 * * *"}]
+        }
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567891",
+      "name": "Schedule Every 6 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [100, 300]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "tickets",
+        "returnAll": true,
+        "filters": {
+          "values": [
+            {
+              "keyName": "feedback_processed",
+              "condition": "eq",
+              "keyValue": "false"
+            }
+          ]
+        }
+      },
+      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678902",
+      "name": "Read Unprocessed Tickets",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [320, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const tickets = $input.all().map(i => i.json);\nconst toProcess = tickets.filter(t => {\n  const fp = String(t.feedback_processed ?? '').trim().toUpperCase();\n  const isUnprocessed = fp === 'FALSE' || fp === '0' || t.feedback_processed === false;\n  const feedback = String(t.feedback || t[12] || '').trim().toLowerCase();\n  return isUnprocessed && (feedback === 'agree' || feedback === 'disagree');\n});\nif (toProcess.length === 0) return [{ json: { _skip: true, message: 'No reviewed feedback found', count: 0 } }];\nreturn toProcess.map(t => ({ json: t }));"
+      },
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789013",
+      "name": "Filter Reviewed Tickets",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [540, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": false, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [
+            {
+              "id": "skip-check",
+              "leftValue": "={{ $json._skip }}",
+              "rightValue": true,
+              "operator": {"type": "boolean", "operation": "notTrue"}
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "d4e5f6a7-b8c9-0123-defa-234567890124",
+      "name": "Has Feedback?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [760, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const reviewedTickets = $input.all().map(item => item.json);\nif (reviewedTickets.length === 0) return [{ json: { _skip: true } }];\n\nconst now = new Date();\nconst dateStr = now.toISOString().split('T')[0];\nlet agreed = 0, disagreed = 0;\nconst categoryAccuracy = {};\nconst languageAccuracy = {};\nconst ticketIdsProcessed = [];\n\nfor (const ticket of reviewedTickets) {\n  const feedback = (ticket.feedback || ticket[12] || '').toString().trim().toLowerCase();\n  const category = ticket.issue_category || ticket[6] || 'Other';\n  const language = ticket.language || ticket[10] || 'en';\n  const ticketId = ticket.ticket_id || ticket[0] || '';\n  const isAgree = feedback === 'agree';\n  const isDisagree = feedback === 'disagree';\n  if (!isAgree && !isDisagree) continue;\n  ticketIdsProcessed.push(ticketId);\n  if (isAgree) agreed++; else disagreed++;\n  if (!categoryAccuracy[category]) categoryAccuracy[category] = { agreed: 0, disagreed: 0 };\n  if (isAgree) categoryAccuracy[category].agreed++; else categoryAccuracy[category].disagreed++;\n  if (!languageAccuracy[language]) languageAccuracy[language] = { agreed: 0, disagreed: 0 };\n  if (isAgree) languageAccuracy[language].agreed++; else languageAccuracy[language].disagreed++;\n}\n\nconst totalReviewed = agreed + disagreed;\nconst accuracyRate = totalReviewed > 0 ? Math.round((agreed / totalReviewed) * 1000) / 1000 : 0;\n\nlet worstCategory = 'N/A';\nlet worstRate = 0;\nfor (const [cat, data] of Object.entries(categoryAccuracy)) {\n  const catTotal = data.agreed + data.disagreed;\n  const rate = catTotal > 0 ? data.disagreed / catTotal : 0;\n  if (rate > worstRate) { worstRate = rate; worstCategory = cat; }\n}\n\nconst notes = `Processed ${totalReviewed} tickets. Accuracy: ${Math.round(accuracyRate*100)}%. Worst category: ${worstCategory} (${Math.round(worstRate*100)}% disagreement).`;\n\nconst languageRows = Object.entries(languageAccuracy).map(([lang, data]) => {\n  const langTotal = data.agreed + data.disagreed;\n  const langRate = langTotal > 0 ? Math.round((data.agreed / langTotal) * 1000) / 1000 : 0;\n  return { json: { date: dateStr, total_reviewed: langTotal, agreed: data.agreed, disagreed: data.disagreed, accuracy_rate: langRate, worst_category: worstCategory, notes: `Language: ${lang}. ${langTotal} tickets. Accuracy: ${Math.round(langRate*100)}%.`, language: lang, _ticket_ids: [] } };\n});\n\nreturn [{ json: { date: dateStr, total_reviewed: totalReviewed, agreed, disagreed, accuracy_rate: accuracyRate, worst_category: worstCategory, notes, language: 'all', _ticket_ids: ticketIdsProcessed } }, ...languageRows];"
+      },
+      "id": "e5f6a7b8-c9d0-1234-efab-345678901235",
+      "name": "Calculate Accuracy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [980, 200]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "tableId": "accuracy_log",
+        "fieldsUi": {
+          "fieldValues": [
+            {"fieldId": "date", "fieldValue": "={{ $json.date }}"},
+            {"fieldId": "total_reviewed", "fieldValue": "={{ $json.total_reviewed }}"},
+            {"fieldId": "agreed", "fieldValue": "={{ $json.agreed }}"},
+            {"fieldId": "disagreed", "fieldValue": "={{ $json.disagreed }}"},
+            {"fieldId": "accuracy_rate", "fieldValue": "={{ $json.accuracy_rate }}"},
+            {"fieldId": "worst_category", "fieldValue": "={{ $json.worst_category }}"},
+            {"fieldId": "notes", "fieldValue": "={{ $json.notes }}"},
+            {"fieldId": "language", "fieldValue": "={{ $json.language }}"}
+          ]
+        }
+      },
+      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
+      "id": "f6a7b8c9-d0e1-2345-fabc-456789012346",
+      "name": "Write to Accuracy Log",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1200, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build list of ticket IDs to mark as processed\nconst accuracyData = $('Calculate Accuracy').first().json;\nconst ticketIds = accuracyData._ticket_ids || [];\n// Return one item per ticket ID for the update loop\nif (ticketIds.length === 0) return [{ json: { _no_updates: true } }];\nreturn ticketIds.map(id => ({ json: { ticket_id: id, feedback_processed: true } }));"
+      },
+      "id": "a7b8c9d0-e1f2-3456-abcd-567890123457",
+      "name": "Prepare Update List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1420, 200]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "tickets",
+        "filters": {
+          "values": [
+            {"keyName": "ticket_id", "condition": "eq", "keyValue": "={{ $json.ticket_id }}"}
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {"fieldId": "feedback_processed", "fieldValue": "=true"}
+          ]
+        }
+      },
+      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
+      "id": "b8c9d0e1-f2a3-4567-bcde-678901234568",
+      "name": "Mark Tickets Processed",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1640, 200]
+    },
+    {
+      "parameters": {},
+      "id": "c9d0e1f2-a3b4-5678-cdef-789012345679",
+      "name": "No Feedback to Process",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [980, 400]
+    }
+  ],
+  "connections": {
+    "Schedule Every 6 Hours": {"main": [[{"node": "Read Unprocessed Tickets", "type": "main", "index": 0}]]},
+    "Read Unprocessed Tickets": {"main": [[{"node": "Filter Reviewed Tickets", "type": "main", "index": 0}]]},
+    "Filter Reviewed Tickets": {"main": [[{"node": "Has Feedback?", "type": "main", "index": 0}]]},
+    "Has Feedback?": {
+      "main": [
+        [{"node": "Calculate Accuracy", "type": "main", "index": 0}],
+        [{"node": "No Feedback to Process", "type": "main", "index": 0}]
+      ]
+    },
+    "Calculate Accuracy": {"main": [[{"node": "Write to Accuracy Log", "type": "main", "index": 0}]]},
+    "Write to Accuracy Log": {"main": [[{"node": "Prepare Update List", "type": "main", "index": 0}]]},
+    "Prepare Update List": {"main": [[{"node": "Mark Tickets Processed", "type": "main", "index": 0}]]}
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "id": "wf7-feedback-loop"
+}

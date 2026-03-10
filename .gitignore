@@ -38,3 +38,7 @@ Thumbs.db
 # Misc
 *.pem
 .vercel
+
+# Claude Code personal config & MCP secrets
+.claude/
+.mcp.json

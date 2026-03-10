@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily QA Report</title>
+</head>
+<!--
+  DAILY REPORT EMAIL TEMPLATE
+  This template is used as the structural reference for wf3-build-email-html.js.
+  The actual email is rendered programmatically by that script with real data.
+  This file shows the intended layout and style for preview/design reference.
+
+  Variables (replaced by wf3-build-email-html.js):
+    {{date}}              — formatted date string
+    {{total_analyzed}}    — total conversations
+    {{satisfaction_rate}} — percentage 0-100
+    {{critical_count}}    — count
+    {{high_count}}        — count
+    {{medium_count}}      — count
+    {{low_count}}         — count
+    {{critical_high_rows}} — rendered table rows
+    {{top_issue_rows}}    — rendered table rows
+    {{agent_flag_rows}}   — rendered table rows
+    {{generated_at}}      — ISO timestamp
+-->
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:20px 0;">
+  <tr><td align="center">
+  <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+
+    <!-- HEADER -->
+    <tr><td style="background:#1a1a2e;padding:24px 28px;border-radius:8px 8px 0 0;">
+      <h1 style="margin:0;color:#fff;font-size:20px;">&#x1F4CA; Daily Chat QA Report</h1>
+      <p style="margin:6px 0 0;color:#94a3b8;font-size:14px;">{{date}}</p>
+    </td></tr>
+
+    <!-- DASHBOARD STATS ROW -->
+    <tr><td style="background:#fff;padding:20px 28px;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td width="25%" style="text-align:center;padding:12px 6px;">
+            <div style="font-size:32px;font-weight:bold;color:#1a1a2e;">{{total_analyzed}}</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:4px;">Total Analyzed</div>
+          </td>
+          <td width="25%" style="text-align:center;padding:12px 6px;border-left:1px solid #e5e7eb;">
+            <div style="font-size:32px;font-weight:bold;color:#16a34a;">{{satisfaction_rate}}%</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:4px;">Satisfaction Rate</div>
+          </td>
+          <td width="25%" style="text-align:center;padding:12px 6px;border-left:1px solid #e5e7eb;">
+            <div style="font-size:32px;font-weight:bold;color:#dc2626;">{{critical_count}}</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:4px;">Critical</div>
+          </td>
+          <td width="25%" style="text-align:center;padding:12px 6px;border-left:1px solid #e5e7eb;">
+            <div style="font-size:32px;font-weight:bold;color:#ea580c;">{{high_count}}</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:4px;">High</div>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+
+    <!-- SEVERITY BADGES -->
+    <tr><td style="background:#f9fafb;padding:8px 28px;border-top:1px solid #e5e7eb;">
+      <p style="margin:0;font-size:12px;color:#6b7280;text-align:center;">
+        <span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:bold;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;">Critical</span> {{critical_count}} &nbsp;
+        <span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:bold;background:#fff7ed;color:#ea580c;border:1px solid #fdba74;">High</span> {{high_count}} &nbsp;
+        <span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:bold;background:#fefce8;color:#ca8a04;border:1px solid #fde047;">Medium</span> {{medium_count}} &nbsp;
+        <span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:bold;background:#f0fdf4;color:#16a34a;border:1px solid #86efac;">Low</span> {{low_count}}
+      </p>
+    </td></tr>
+
+    <!-- CRITICAL & HIGH TABLE -->
+    <tr><td style="background:#fff;padding:20px 28px;border-top:1px solid #e5e7eb;">
+      <h2 style="margin:0 0 14px;font-size:16px;color:#1a1a2e;">&#x1F525; Critical &amp; High Priority</h2>
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">
+        <thead>
+          <tr style="background:#f1f5f9;">
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#6b7280;text-transform:uppercase;">Conv ID</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#6b7280;text-transform:uppercase;">Agent</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#6b7280;text-transform:uppercase;">Category</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#6b7280;text-transform:uppercase;">Severity</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#6b7280;text-transform:uppercase;">Recommended Action</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#6b7280;text-transform:uppercase;">Link</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{critical_high_rows}}
+          <!-- Example row structure (rendered by wf3-build-email-html.js):
+          <tr style="border-bottom:1px solid #e5e7eb;">
+            <td style="padding:8px 10px;font-size:13px;font-family:monospace;">CONV-12345</td>
+            <td style="padding:8px 10px;font-size:13px;">Agent Name</td>
+            <td style="padding:8px 10px;font-size:13px;">Payment/Withdrawal</td>
+            <td style="padding:8px 10px;"><span style="...">Critical</span></td>
+            <td style="padding:8px 10px;font-size:12px;color:#4b5563;">Escalate to payments team immediately</td>
+            <td style="padding:8px 10px;"><a href="..." style="color:#2563eb;font-size:12px;">View</a></td>
+          </tr>
+          -->
+        </tbody>
+      </table>
+    </td></tr>
+
+    <!-- TOP ISSUES -->
+    <tr><td style="background:#fff;padding:20px 28px;border-top:1px solid #e5e7eb;">
+      <h2 style="margin:0 0 14px;font-size:16px;color:#1a1a2e;">&#x1F4CA; Top Issue Categories</h2>
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">
+        <thead>
+          <tr style="background:#f1f5f9;">
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#6b7280;">#</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#6b7280;">Category</th>
+            <th style="padding:8px 10px;text-align:center;font-size:11px;color:#6b7280;">Count</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#6b7280;">Volume</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{top_issue_rows}}
+        </tbody>
+      </table>
+    </td></tr>
+
+    <!-- AGENT FLAGS -->
+    <tr><td style="background:#fff;padding:20px 28px;border-top:1px solid #e5e7eb;">
+      <h2 style="margin:0 0 14px;font-size:16px;color:#1a1a2e;">&#x1F464; Agent Performance Flags</h2>
+      <p style="margin:0 0 12px;font-size:12px;color:#6b7280;">Agents with average score &le; 2.0 today (coaching required)</p>
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;">
+        <thead>
+          <tr style="background:#f1f5f9;">
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#6b7280;">Agent</th>
+            <th style="padding:8px 10px;text-align:center;font-size:11px;color:#6b7280;">Avg Score</th>
+            <th style="padding:8px 10px;text-align:center;font-size:11px;color:#6b7280;">Conversations</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;color:#6b7280;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{agent_flag_rows}}
+        </tbody>
+      </table>
+    </td></tr>
+
+    <!-- FOOTER -->
+    <tr><td style="background:#f1f5f9;padding:16px 28px;border-radius:0 0 8px 8px;border-top:1px solid #e5e7eb;">
+      <p style="margin:0;font-size:11px;color:#9ca3af;text-align:center;">
+        Generated automatically by Chat QA System &bull; {{generated_at}} &bull; AI analysis — for human review
+      </p>
+    </td></tr>
+
+  </table>
+  </td></tr>
+</table>
+</body>
+</html>

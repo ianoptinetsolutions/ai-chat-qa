@@ -1,0 +1,286 @@
+{
+  "name": "WF1 - Daily Data Collection",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [100, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.intercom.io/conversations",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {"name": "state", "value": "closed"},
+            {"name": "per_page", "value": "150"},
+            {"name": "updated_since", "value": "={{ Math.floor((Date.now() - 86400000) / 1000) }}"}
+          ]
+        },
+        "options": {
+          "pagination": {
+            "pagination": {
+              "paginationMode": "responseContainsNextURL",
+              "nextURL": "={{ typeof $response.body.pages?.next === 'string' ? $response.body.pages.next : null }}",
+              "limitPagesFetched": true,
+              "maxRequests": 20
+            }
+          },
+          "retryOnFail": true,
+          "maxTries": 3,
+          "retryInterval": 1000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {"id": "intercom_api", "name": "Intercom API"}
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000002",
+      "name": "Fetch Conversations",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [320, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const conversations = $input.all();\n// Warn if Intercom returned multi-page results but pagination may have used cursor mode (object next, not URL)\nconst firstItem = conversations[0]?.json;\nif (firstItem?.pages?.total_pages > 1 && typeof firstItem?.pages?.next !== 'string') {\n  console.warn(`[WF1 PAGINATION WARNING] Intercom reports ${firstItem.pages.total_pages} total pages but pages.next is not a URL string (cursor-based API detected). Only the first page was fetched. Check Intercom API version and update pagination config.`);\n}\nconst filtered = [];\nfor (const item of conversations) {\n  try {\n    const convo = item.json;\n    const parts = convo.conversation_parts?.conversation_parts || [];\n    const hasHumanReply = parts.some(part => {\n      const authorType = part.author?.type;\n      return authorType === 'admin' || authorType === 'team';\n    });\n    if (hasHumanReply) filtered.push({ json: convo });\n  } catch (err) { console.error('Filter error:', err.message); }\n}\nreturn filtered;"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000003",
+      "name": "Filter Bot-Only",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [540, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "loose"},
+          "conditions": [
+            {
+              "id": "has-convos-check",
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": 0,
+              "operator": {"type": "number", "operation": "gt"}
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "f1a2b3c4-d5e6-7890-fabc-012345678901",
+      "name": "Has Conversations?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [760, 300]
+    },
+    {
+      "parameters": {
+        "operation": "post",
+        "channel": "={{ $env.SLACK_CHANNEL_REPORTS }}",
+        "text": "={{ ':warning: WF1: Collected 0 conversations from Intercom at ' + new Date().toISOString() + '. Check Intercom API connectivity.' }}",
+        "otherOptions": {}
+      },
+      "id": "a2b3c4d5-e6f7-8901-abcd-123456789012",
+      "name": "Alert Zero Conversations",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [980, 500],
+      "credentials": {"slackApi": {"id": "slack_api", "name": "slack_api"}}
+    },
+    {
+      "parameters": {"batchSize": 1, "options": {}},
+      "id": "a1b2c3d4-0001-0001-0001-000000000004",
+      "name": "Split Conversations",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [980, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.intercom.io/conversations/{{ $json.id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "options": {"retryOnFail": true, "maxTries": 3}
+      },
+      "credentials": {"httpHeaderAuth": {"id": "intercom_api", "name": "Intercom API"}},
+      "id": "a1b2c3d4-0001-0001-0001-000000000005",
+      "name": "Get Full Conversation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const convo = $input.first().json;\ntry {\n  const conversationId = convo.id;\n  const createdAt = new Date(convo.created_at * 1000).toISOString();\n  const collectedAt = new Date().toISOString();\n  const status = convo.state || 'closed';\n  const intercomLink = `https://app.intercom.com/a/inbox/conversation/${conversationId}`;\n  const contact = convo.contacts?.contacts?.[0];\n  const playerId = contact?.external_id || contact?.id || 'unknown';\n  const tags = (convo.tags?.tags || []).map(t => t.name).join(', ');\n  const lines = [];\n  const firstBody = convo.conversation_message?.body;\n  if (firstBody) {\n    const ts = new Date(convo.created_at * 1000).toISOString();\n    const cleanBody = stripHtml(firstBody);\n    lines.push(`[${ts}] PLAYER: ${cleanBody || '[Image attached]'}`);\n  }\n  let agentName = 'Unknown';\n  const parts = convo.conversation_parts?.conversation_parts || [];\n  for (const part of parts) {\n    const authorType = part.author?.type;\n    if (authorType === 'bot' || authorType === 'operator') continue;\n    let role;\n    if (authorType === 'admin' || authorType === 'team') {\n      role = 'AGENT';\n      if (agentName === 'Unknown' && part.author?.name) agentName = part.author.name;\n    } else { role = 'PLAYER'; }\n    const ts = new Date(part.created_at * 1000).toISOString();\n    let body = part.body ? stripHtml(part.body) : '';\n    if (!body && part.attachments?.length > 0) {\n      const attachment = part.attachments[0];\n      body = attachment.content_type?.startsWith('image/') ? '[Image attached]' : '[File attached]';\n    }\n    if (body) lines.push(`[${ts}] ${role}: ${body}`);\n  }\n  return [{ json: { conversation_id: conversationId, player_id: playerId, agent_name: agentName, transcript: lines.join('\\n'), tags, created_at: createdAt, collected_at: collectedAt, status, intercom_link: intercomLink } }];\n} catch (err) { throw new Error(`Format failed for ${convo?.id}: ${err.message}`); }\nfunction stripHtml(html) {\n  if (!html) return '';\n  return html\n    .replace(/<br\\s*\\/?>/gi, '\\n')\n    .replace(/<p>/gi, '')\n    .replace(/<\\/p>/gi, '\\n')\n    .replace(/<[^>]+>/g, '')\n    .replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&quot;/g, '\"')\n    .replace(/&#39;/g, \"'\")\n    .replace(/&nbsp;/g, ' ')\n    .trim();\n}"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000006",
+      "name": "Format Transcript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1420, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/raw_conversations?conversation_id=eq.{{ encodeURIComponent($json.conversation_id) }}&select=conversation_id&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "apikey", "value": "={{ $env.SUPABASE_API_KEY }}"},
+            {"name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_API_KEY }}"}
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000007",
+      "name": "Check If Exists",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1640, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst body = response.body || [];\nconst exists = Array.isArray(body) && body.length > 0;\nconst formatData = $('Format Transcript').item.json;\nreturn [{ json: { ...formatData, _exists: exists } }];"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000008",
+      "name": "Route New vs Existing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1860, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [
+            {
+              "id": "dup-check",
+              "leftValue": "={{ $json._exists }}",
+              "rightValue": false,
+              "operator": {"type": "boolean", "operation": "equals"}
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000009",
+      "name": "Check Duplicate",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2080, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "tableId": "raw_conversations",
+        "fieldsUi": {
+          "fieldValues": [
+            {"fieldId": "conversation_id", "fieldValue": "={{ $json.conversation_id }}"},
+            {"fieldId": "player_id", "fieldValue": "={{ $json.player_id }}"},
+            {"fieldId": "agent_name", "fieldValue": "={{ $json.agent_name }}"},
+            {"fieldId": "transcript", "fieldValue": "={{ $json.transcript }}"},
+            {"fieldId": "tags", "fieldValue": "={{ $json.tags }}"},
+            {"fieldId": "created_at", "fieldValue": "={{ $json.created_at }}"},
+            {"fieldId": "collected_at", "fieldValue": "={{ $json.collected_at }}"},
+            {"fieldId": "status", "fieldValue": "={{ $json.status }}"},
+            {"fieldId": "intercom_link", "fieldValue": "={{ $json.intercom_link }}"},
+            {"fieldId": "is_bot_handled", "fieldValue": "={{ $json.is_bot_handled }}"},
+            {"fieldId": "analysis_status", "fieldValue": "pending"}
+          ]
+        }
+      },
+      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
+      "id": "a1b2c3d4-0001-0001-0001-000000000010",
+      "name": "Insert Conversation",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [2300, 200]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "raw_conversations",
+        "filters": {
+          "values": [
+            {"keyName": "conversation_id", "condition": "eq", "keyValue": "={{ $json.conversation_id }}"}
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {"fieldId": "player_id", "fieldValue": "={{ $json.player_id }}"},
+            {"fieldId": "agent_name", "fieldValue": "={{ $json.agent_name }}"},
+            {"fieldId": "transcript", "fieldValue": "={{ $json.transcript }}"},
+            {"fieldId": "tags", "fieldValue": "={{ $json.tags }}"},
+            {"fieldId": "created_at", "fieldValue": "={{ $json.created_at }}"},
+            {"fieldId": "collected_at", "fieldValue": "={{ $json.collected_at }}"},
+            {"fieldId": "status", "fieldValue": "={{ $json.status }}"},
+            {"fieldId": "intercom_link", "fieldValue": "={{ $json.intercom_link }}"},
+            {"fieldId": "is_bot_handled", "fieldValue": "={{ $json.is_bot_handled }}"}
+          ]
+        }
+      },
+      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
+      "id": "a1b2c3d4-0001-0001-0001-000000000011",
+      "name": "Update Conversation",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [2300, 400]
+    },
+    {
+      "parameters": {"amount": 400, "unit": "milliseconds"},
+      "id": "a1b2c3d4-0001-0001-0001-wait400msnode",
+      "name": "Wait 400ms",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1090, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {"main": [[{"node": "Fetch Conversations", "type": "main", "index": 0}]]},
+    "Fetch Conversations": {"main": [[{"node": "Filter Bot-Only", "type": "main", "index": 0}]]},
+    "Filter Bot-Only": {"main": [[{"node": "Has Conversations?", "type": "main", "index": 0}]]},
+    "Has Conversations?": {
+      "main": [
+        [{"node": "Split Conversations", "type": "main", "index": 0}],
+        [{"node": "Alert Zero Conversations", "type": "main", "index": 0}]
+      ]
+    },
+    "Split Conversations": {"main": [[{"node": "Wait 400ms", "type": "main", "index": 0}]]},
+    "Wait 400ms": {"main": [[{"node": "Get Full Conversation", "type": "main", "index": 0}]]},
+    "Get Full Conversation": {"main": [[{"node": "Format Transcript", "type": "main", "index": 0}]]},
+    "Format Transcript": {"main": [[{"node": "Check If Exists", "type": "main", "index": 0}]]},
+    "Check If Exists": {"main": [[{"node": "Route New vs Existing", "type": "main", "index": 0}]]},
+    "Route New vs Existing": {"main": [[{"node": "Check Duplicate", "type": "main", "index": 0}]]},
+    "Check Duplicate": {
+      "main": [
+        [{"node": "Insert Conversation", "type": "main", "index": 0}],
+        [{"node": "Update Conversation", "type": "main", "index": 0}]
+      ]
+    },
+    "Insert Conversation": {"main": [[{"node": "Split Conversations", "type": "main", "index": 0}]]},
+    "Update Conversation": {"main": [[{"node": "Split Conversations", "type": "main", "index": 0}]]}
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "id": "wf1-daily-data-collection"
+}
