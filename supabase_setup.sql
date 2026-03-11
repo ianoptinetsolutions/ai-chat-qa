@@ -5,15 +5,16 @@
 --
 --  Tables
 --  ──────────────────────────────────────────────────────────────
---  1. qa_conversations     Intercom data collected daily    (WF1)
---  2. qa_analysis          Claude AI analysis output        (WF2)
---  3. qa_tickets           QA tickets for flagged convos    (WF4)
---  4. qa_alerts            Critical alert fire log          (WF5)
---  5. qa_agent_map         Agent → team leader routing      (manual)
---  6. qa_trends            7-day rolling trend summary      (WF6)
---  7. qa_accuracy          AI accuracy metrics              (WF7)
---  8. qa_daily_reports     Daily report run log             (WF3)
---  9. qa_monthly_reports   Monthly report archive           (WF8)
+--  1. qa_conversations     Agent-handled conversations      (WF1)
+--  2. qa_bot_conversations Bot-only conversations           (WF1)
+--  3. qa_analysis          Claude AI analysis output        (WF2)
+--  4. qa_tickets           QA tickets for flagged convos    (WF4)
+--  5. qa_alerts            Critical alert fire log          (WF5)
+--  6. qa_agent_map         Agent → team leader routing      (manual)
+--  7. qa_trends            7-day rolling trend summary      (WF6)
+--  8. qa_accuracy          AI accuracy metrics              (WF7)
+--  9. qa_daily_reports     Daily report run log             (WF3)
+-- 10. qa_monthly_reports   Monthly report archive           (WF8)
 --
 -- ================================================================
 
@@ -45,7 +46,34 @@ CREATE INDEX IF NOT EXISTS idx_qa_conversations_analysis_status
 
 
 -- ----------------------------------------------------------------
---  2. QA_ANALYSIS
+--  2. QA_BOT_CONVERSATIONS
+--     Stores bot-handled Intercom conversations fetched daily.
+--     WF1 inserts here for conversations with no human agent reply.
+--     WF2 reads rows where analysis_status = 'pending'.
+-- ----------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS qa_bot_conversations (
+  id                BIGSERIAL     PRIMARY KEY,
+  conversation_id   TEXT          NOT NULL UNIQUE,
+  player_id         TEXT,
+  agent_name        TEXT          DEFAULT 'Bot',
+  transcript        TEXT,
+  tags              TEXT,
+  created_at        TIMESTAMPTZ,
+  collected_at      TIMESTAMPTZ,
+  status            TEXT,
+  intercom_link     TEXT,
+  analysis_status   TEXT          NOT NULL DEFAULT 'pending',   -- pending | done | error
+  is_bot_handled    BOOLEAN       NOT NULL DEFAULT TRUE,        -- always true for this table
+  language          VARCHAR(5),                                  -- ISO 639-1 code detected by WF2
+  inserted_at       TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_qa_bot_conversations_analysis_status
+  ON qa_bot_conversations (analysis_status);
+
+
+-- ----------------------------------------------------------------
+--  3. QA_ANALYSIS
 --     Claude AI analysis output per conversation.
 --     WF2 inserts here after processing qa_conversations.
 -- ----------------------------------------------------------------
@@ -246,8 +274,8 @@ ALTER TABLE qa_accuracy
 
 
 -- ================================================================
---  DONE — 9 tables created successfully.
+--  DONE — 10 tables created successfully.
 -- ================================================================
-SELECT 'Tables created: qa_conversations, qa_analysis, qa_tickets, '
+SELECT 'Tables created: qa_conversations, qa_bot_conversations, qa_analysis, qa_tickets, '
     || 'qa_alerts, qa_agent_map, qa_trends, '
     || 'qa_accuracy, qa_daily_reports, qa_monthly_reports' AS result;
