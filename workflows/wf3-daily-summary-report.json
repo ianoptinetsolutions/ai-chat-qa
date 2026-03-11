@@ -4,322 +4,151 @@
     {
       "parameters": {
         "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "30 7 * * *"
-            }
-          ]
+          "interval": [{"field": "cronExpression", "expression": "30 7 * * *"}]
         }
       },
       "id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
-      "position": [
-        -176,
-        304
-      ]
+      "position": [100, 300]
     },
     {
       "parameters": {
         "operation": "getAll",
-        "tableId": "qa_conversations",
+        "tableId": "raw_conversations",
         "returnAll": true,
-        "matchType": "allFilters",
         "filters": {
-          "conditions": [
-            {
-              "keyName": "analysis_status",
-              "condition": "eq",
-              "keyValue": "pending"
-            }
+          "values": [
+            {"keyName": "analysis_status", "condition": "eq", "keyValue": "pending"}
           ]
         }
       },
+      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
       "id": "wf3-read-pending-count-001",
       "name": "Read Pending Count",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [
-        64,
-        304
-      ],
-      "credentials": {
-        "supabaseApi": {
-          "id": "48UlSg2STuVckZm2",
-          "name": "Supabase account 2"
-        }
-      }
+      "position": [210, 300]
     },
     {
       "parameters": {
         "operation": "getAll",
-        "tableId": "qa_analysis",
-        "returnAll": true
+        "tableId": "analysis_results",
+        "returnAll": true,
+        "filters": {
+          "values": [
+            {
+              "keyName": "analyzed_at",
+              "condition": "gte",
+              "keyValue": "={{ new Date(Date.now() - 86400000).toISOString() }}"
+            }
+          ]
+        }
       },
+      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
       "id": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",
       "name": "Read Analysis Results",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [
-        320,
-        304
-      ],
-      "credentials": {
-        "supabaseApi": {
-          "id": "48UlSg2STuVckZm2",
-          "name": "Supabase account 2"
-        }
-      }
+      "position": [320, 300]
     },
     {
       "parameters": {
-        "jsCode": "const pendingCount = 0;\nconst rows = $input.all().map(item => item.json);\nconst today = new Date().toISOString().split('T')[0];\nconst counts = { Critical: 0, High: 0, Medium: 0, Low: 0 };\nconst categoryMap = {};\nconst criticalHighItems = [];\nconst agentScores = {};\nfor (const row of rows) {\n  const severity = row.severity || 'Low';\n  const category = row.issue_category || 'Other';\n  const agentName = row.agent_name || 'Unknown';\n  const agentScore = parseInt(row.agent_score || 3, 10);\n  const convId = row.conversation_id;\n  const summary = row.summary || '';\n  const recommendedAction = row.recommended_action || '';\n  const intercomLink = row.intercom_link || '';\n  if (counts.hasOwnProperty(severity)) counts[severity]++;\n  categoryMap[category] = (categoryMap[category] || 0) + 1;\n  if (severity === 'Critical' || severity === 'High') criticalHighItems.push({ conversation_id: convId, agent_name: agentName, issue_category: category, severity, summary, recommended_action: recommendedAction, intercom_link: intercomLink });\n  if (!agentScores[agentName]) agentScores[agentName] = { total: 0, count: 0 };\n  agentScores[agentName].total += agentScore;\n  agentScores[agentName].count++;\n}\nconst total = rows.length;\nconst satisfactionRate = total > 0 ? Math.round((counts.Low / total) * 1000) / 10 : 0;\nconst topIssues = Object.entries(categoryMap).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([category, count]) => ({ category, count }));\nconst agentFlags = Object.entries(agentScores).map(([name, data]) => ({ agent_name: name, avg_score: Math.round((data.total / data.count) * 10) / 10, conversation_count: data.count })).filter(a => a.avg_score <= 2).sort((a, b) => a.avg_score - b.avg_score);\nreturn [{ json: { date: today, total_analyzed: total, pending_analysis_count: pendingCount, critical_count: counts.Critical, high_count: counts.High, medium_count: counts.Medium, low_count: counts.Low, satisfaction_rate: satisfactionRate, top_issues: topIssues, critical_high_items: criticalHighItems, agent_flags: agentFlags, generated_at: new Date().toISOString() } }];\n"
+        "jsCode": "const pendingRows = $('Read Pending Count').all ? $('Read Pending Count').all() : [];\nconst pendingCount = pendingRows.filter(r => r.json && r.json.conversation_id).length;\nconst rows = $input.all().map(item => item.json);\nconst today = new Date().toISOString().split('T')[0];\nconst filteredRows = rows;\nconst counts = { Critical: 0, High: 0, Medium: 0, Low: 0 };\nconst categoryMap = {};\nconst criticalHighItems = [];\nconst agentScores = {};\nfor (const row of filteredRows) {\n  const severity = row.severity || row[4] || 'Low';\n  const category = row.issue_category || row[5] || 'Other';\n  const agentName = row.agent_name || row[2] || 'Unknown';\n  const agentScore = parseInt(row.agent_score || row[8] || 3, 10);\n  const convId = row.conversation_id || row[0];\n  const summary = row.summary || row[3] || '';\n  const recommendedAction = row.recommended_action || row[10] || '';\n  const intercomLink = row.intercom_link || row[14] || '';\n  if (counts.hasOwnProperty(severity)) counts[severity]++;\n  categoryMap[category] = (categoryMap[category] || 0) + 1;\n  if (severity === 'Critical' || severity === 'High') criticalHighItems.push({ conversation_id: convId, agent_name: agentName, issue_category: category, severity, summary, recommended_action: recommendedAction, intercom_link: intercomLink });\n  if (!agentScores[agentName]) agentScores[agentName] = { total: 0, count: 0 };\n  agentScores[agentName].total += agentScore;\n  agentScores[agentName].count++;\n}\nconst total = filteredRows.length;\nconst satisfactionRate = total > 0 ? Math.round((counts.Low / total) * 1000) / 10 : 0;\nconst topIssues = Object.entries(categoryMap).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([category, count]) => ({ category, count }));\nconst agentFlags = Object.entries(agentScores).map(([name, data]) => ({ agent_name: name, avg_score: Math.round((data.total / data.count) * 10) / 10, conversation_count: data.count })).filter(a => a.avg_score <= 2).sort((a, b) => a.avg_score - b.avg_score);\nreturn [{ json: { date: today, total_analyzed: total, pending_analysis_count: pendingCount, critical_count: counts.Critical, high_count: counts.High, medium_count: counts.Medium, low_count: counts.Low, satisfaction_rate: satisfactionRate, top_issues: topIssues, critical_high_items: criticalHighItems, agent_flags: agentFlags, generated_at: new Date().toISOString() } }];"
       },
       "id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
       "name": "Compile Metrics",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        544,
-        304
-      ]
+      "position": [540, 300]
     },
     {
       "parameters": {
-        "jsCode": "const m = $input.first().json;\nconst satColor = m.satisfaction_rate >= 80 ? '#10b981' : m.satisfaction_rate >= 60 ? '#f59e0b' : '#ef4444';\nconst satBg = m.satisfaction_rate >= 80 ? '#d1fae5' : m.satisfaction_rate >= 60 ? '#fef3c7' : '#fee2e2';\n\nconst sevBadge = (sev) => {\n  const colors = { Critical: ['#dc2626','#fee2e2'], High: ['#ea580c','#ffedd5'], Medium: ['#d97706','#fef3c7'], Low: ['#16a34a','#dcfce7'] };\n  const [fg, bg] = colors[sev] || ['#6b7280','#f3f4f6'];\n  return `<span style=\"background:${bg};color:${fg};font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap\">${sev}</span>`;\n};\n\nconst critHighRows = m.critical_high_items.length > 0\n  ? m.critical_high_items.slice(0, 20).map((i, idx) => `<tr style=\"background:${idx%2===0?'#ffffff':'#fafafa'};border-bottom:1px solid #f1f5f9\"><td style=\"padding:10px 12px;font-size:11px;color:#94a3b8;font-family:monospace\">${i.conversation_id}</td><td style=\"padding:10px 12px;font-size:12px;font-weight:600;color:#1e293b\">${i.agent_name}</td><td style=\"padding:10px 12px\"><span style=\"background:#eff6ff;color:#3b82f6;font-size:11px;padding:2px 8px;border-radius:4px\">${i.issue_category}</span></td><td style=\"padding:10px 12px\">${sevBadge(i.severity)}</td><td style=\"padding:10px 12px;font-size:11px;color:#475569;line-height:1.5\">${i.recommended_action}</td><td style=\"padding:10px 12px;text-align:center\"><a href=\"${i.intercom_link}\" style=\"background:#1e293b;color:#fff;font-size:11px;padding:4px 12px;border-radius:4px;text-decoration:none;white-space:nowrap\">&#8599; View</a></td></tr>`).join('')\n  : '<tr><td colspan=\"6\" style=\"padding:20px;text-align:center;color:#94a3b8;font-style:italic;font-size:13px\">No critical or high priority conversations today</td></tr>';\n\nconst topRows = m.top_issues.map((i, idx) => {\n  const pct = m.total_analyzed > 0 ? Math.round((i.count / m.total_analyzed) * 100) : 0;\n  return `<tr style=\"border-bottom:1px solid #f1f5f9\"><td style=\"padding:10px 12px;font-size:13px;font-weight:700;color:#94a3b8\">#${idx+1}</td><td style=\"padding:10px 12px;font-size:12px;color:#1e293b\">${i.category}</td><td style=\"padding:10px 12px\"><div style=\"background:#f1f5f9;border-radius:4px;overflow:hidden;height:8px;width:80px;display:inline-block;vertical-align:middle\"><div style=\"background:#3b82f6;height:8px;width:${pct}%\"></div></div></td><td style=\"padding:10px 12px;text-align:right;font-size:13px;font-weight:700;color:#1e293b\">${i.count}</td></tr>`;\n}).join('');\n\nconst flagRows = m.agent_flags.length > 0\n  ? m.agent_flags.map(a => `<tr style=\"border-bottom:1px solid #fecaca\"><td style=\"padding:10px 12px;font-size:12px;font-weight:600;color:#1e293b\">${a.agent_name}</td><td style=\"padding:10px 12px;text-align:center\"><span style=\"background:#fee2e2;color:#dc2626;font-size:14px;font-weight:700;padding:4px 12px;border-radius:6px\">${a.avg_score}</span></td><td style=\"padding:10px 12px;text-align:center;font-size:12px;color:#64748b\">${a.conversation_count} convos</td></tr>`).join('')\n  : '<tr><td colspan=\"3\" style=\"padding:16px;text-align:center;color:#94a3b8;font-style:italic;font-size:12px\">No flags today &#10003;</td></tr>';\n\nconst pendingBanner = m.pending_analysis_count > 0\n  ? `<div style=\"background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 32px;font-size:12px;color:#92400e\">&#9888; <strong>${m.pending_analysis_count} conversations still pending analysis</strong> \u2014 this report may be incomplete.</div>`\n  : '';\n\nconst html = `<!DOCTYPE html><html><head><meta charset=\"UTF-8\"></head><body style=\"margin:0;padding:0;background:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif\">\n<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#e2e8f0;padding:24px 0\"><tr><td align=\"center\">\n<table width=\"1200\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:1200px;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.12)\">\n\n${pendingBanner ? `<tr><td colspan=\"2\">${pendingBanner}</td></tr>` : ''}\n\n<!-- HEADER -->\n<tr><td colspan=\"2\" style=\"background:linear-gradient(135deg,#0f172a 0%,#1e293b 60%,#0f4c75 100%);padding:32px 40px\">\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr valign=\"middle\">\n    <td><p style=\"margin:0 0 4px;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:0.1em\">Chat QA System</p><h1 style=\"margin:0;color:#f8fafc;font-size:24px;font-weight:700;letter-spacing:-0.02em\">Daily QA Report</h1><p style=\"margin:6px 0 0;color:#94a3b8;font-size:14px\">${m.date} &nbsp;&#183;&nbsp; Generated ${new Date(m.generated_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}</p></td>\n    <td style=\"text-align:right\">\n      <table cellpadding=\"0\" cellspacing=\"0\" style=\"display:inline-table\"><tr>\n        <td style=\"padding:0 6px\"><div style=\"background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:14px 20px;text-align:center;min-width:70px\"><div style=\"font-size:30px;font-weight:800;color:#f8fafc;line-height:1\">${m.total_analyzed}</div><div style=\"font-size:10px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:0.05em\">Total</div></div></td>\n        <td style=\"padding:0 6px\"><div style=\"background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:14px 20px;text-align:center;min-width:70px\"><div style=\"font-size:30px;font-weight:800;color:${satColor};line-height:1\">${m.satisfaction_rate}%</div><div style=\"font-size:10px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:0.05em\">Satisfaction</div></div></td>\n        <td style=\"padding:0 6px\"><div style=\"background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:14px 20px;text-align:center;min-width:70px\"><div style=\"font-size:30px;font-weight:800;color:#ef4444;line-height:1\">${m.critical_count}</div><div style=\"font-size:10px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:0.05em\">Critical</div></div></td>\n        <td style=\"padding:0 6px\"><div style=\"background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:14px 20px;text-align:center;min-width:70px\"><div style=\"font-size:30px;font-weight:800;color:#f97316;line-height:1\">${m.high_count}</div><div style=\"font-size:10px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:0.05em\">High</div></div></td>\n        <td style=\"padding:0 6px\"><div style=\"background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:14px 20px;text-align:center;min-width:70px\"><div style=\"font-size:30px;font-weight:800;color:#fbbf24;line-height:1\">${m.medium_count}</div><div style=\"font-size:10px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:0.05em\">Medium</div></div></td>\n        <td style=\"padding:0 6px\"><div style=\"background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:14px 20px;text-align:center;min-width:70px\"><div style=\"font-size:30px;font-weight:800;color:#34d399;line-height:1\">${m.low_count}</div><div style=\"font-size:10px;color:#64748b;margin-top:4px;text-transform:uppercase;letter-spacing:0.05em\">Low</div></div></td>\n      </tr></table>\n    </td>\n  </tr></table>\n</td></tr>\n\n<!-- BODY -->\n<tr>\n  <!-- LEFT: Critical & High -->\n  <td width=\"65%\" valign=\"top\" style=\"background:#ffffff;padding:28px 32px;border-right:1px solid #f1f5f9\">\n    <p style=\"margin:0 0 16px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em\">&#9888; Critical &amp; High Priority</p>\n    <table width=\"100%\" style=\"border-collapse:collapse\">\n      <thead><tr style=\"background:#f8fafc;border-bottom:2px solid #e2e8f0\">\n        <th style=\"padding:10px 12px;text-align:left;font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em\">Conv ID</th>\n        <th style=\"padding:10px 12px;text-align:left;font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em\">Agent</th>\n        <th style=\"padding:10px 12px;text-align:left;font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em\">Category</th>\n        <th style=\"padding:10px 12px;text-align:left;font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em\">Severity</th>\n        <th style=\"padding:10px 12px;text-align:left;font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em\">Recommended Action</th>\n        <th style=\"padding:10px 12px;text-align:center;font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em\">Link</th>\n      </tr></thead>\n      <tbody>${critHighRows}</tbody>\n    </table>\n  </td>\n  <!-- RIGHT: Top Issues + Agent Flags -->\n  <td width=\"35%\" valign=\"top\" style=\"background:#ffffff;padding:28px 32px\">\n    <p style=\"margin:0 0 16px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em\">&#128202; Top Issues by Category</p>\n    <table width=\"100%\" style=\"border-collapse:collapse;margin-bottom:28px\">\n      <thead><tr style=\"background:#f8fafc;border-bottom:2px solid #e2e8f0\">\n        <th style=\"padding:10px 12px;font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase\">#</th>\n        <th style=\"padding:10px 12px;text-align:left;font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase\">Category</th>\n        <th style=\"padding:10px 12px;font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase\">Trend</th>\n        <th style=\"padding:10px 12px;text-align:right;font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase\">Count</th>\n      </tr></thead>\n      <tbody>${topRows}</tbody>\n    </table>\n    <p style=\"margin:0 0 16px;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em\">&#9873; Agent Flags <span style=\"font-size:9px;font-weight:400;color:#cbd5e1\">(avg score &le; 2)</span></p>\n    <table width=\"100%\" style=\"border-collapse:collapse;background:#fff5f5;border-radius:8px;overflow:hidden\">\n      <thead><tr style=\"background:#fef2f2;border-bottom:2px solid #fecaca\">\n        <th style=\"padding:10px 12px;text-align:left;font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase\">Agent</th>\n        <th style=\"padding:10px 12px;text-align:center;font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase\">Avg Score</th>\n        <th style=\"padding:10px 12px;text-align:center;font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase\">Volume</th>\n      </tr></thead>\n      <tbody>${flagRows}</tbody>\n    </table>\n  </td>\n</tr>\n\n<!-- FOOTER -->\n<tr><td colspan=\"2\" style=\"background:#f8fafc;padding:16px 40px;border-top:1px solid #e2e8f0\">\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\"><tr>\n    <td style=\"font-size:11px;color:#94a3b8\">&#128187; Chat QA System &nbsp;&#183;&nbsp; AI-generated report</td>\n    <td style=\"text-align:right;font-size:11px;color:#cbd5e1\">${m.generated_at}</td>\n  </tr></table>\n</td></tr>\n\n</table>\n</td></tr></table>\n</body></html>`;\n\nconst subject = `[QA Report] ${m.date} \u2014 ${m.total_analyzed} convos | ${m.satisfaction_rate}% satisfaction${m.critical_count > 0 ? ` | ${m.critical_count} CRITICAL` : ''}`;\nreturn [{ json: { subject, html_body: html, plain_text: `Daily QA Report ${m.date}: ${m.total_analyzed} conversations, ${m.satisfaction_rate}% satisfaction, ${m.critical_count} critical, ${m.high_count} high`, metrics: m } }];\n"
+        "jsCode": "const m = $input.first().json;\nconst pendingBanner = m.pending_analysis_count > 0 ? `<tr><td style=\"background:#fef3c7;padding:12px 28px;border-left:4px solid #d97706\"><p style=\"margin:0;color:#92400e;font-size:13px\">\u26a0\ufe0f <strong>${m.pending_analysis_count} conversations still pending analysis</strong> \u2014 this report may be incomplete. Final numbers will be available once analysis completes.</p></td></tr>` : '';\nconst satColor = m.satisfaction_rate >= 80 ? '#16a34a' : m.satisfaction_rate >= 60 ? '#d97706' : '#dc2626';\nconst critHighRows = m.critical_high_items.slice(0, 20).map(i => `<tr style=\"border-bottom:1px solid #e5e7eb\"><td style=\"padding:8px 10px;font-family:monospace;font-size:12px\">${i.conversation_id}</td><td style=\"padding:8px 10px;font-size:13px\">${i.agent_name}</td><td style=\"padding:8px 10px;font-size:13px\">${i.issue_category}</td><td style=\"padding:8px 10px;font-size:12px;font-weight:bold;color:${i.severity==='Critical'?'#dc2626':'#ea580c'}\">${i.severity}</td><td style=\"padding:8px 10px;font-size:12px;color:#4b5563\">${i.recommended_action}</td><td style=\"padding:8px 10px\"><a href=\"${i.intercom_link}\" style=\"color:#2563eb;font-size:12px\">View</a></td></tr>`).join('');\nconst topRows = m.top_issues.map((i, idx) => `<tr style=\"background:${idx%2===0?'#fff':'#f9fafb'}\"><td style=\"padding:8px 10px;font-weight:bold\">#${idx+1}</td><td style=\"padding:8px 10px\">${i.category}</td><td style=\"padding:8px 10px;text-align:center;font-weight:bold\">${i.count}</td></tr>`).join('');\nconst flagRows = m.agent_flags.length > 0 ? m.agent_flags.map(a => `<tr style=\"background:#fef2f2\"><td style=\"padding:8px 10px\">${a.agent_name}</td><td style=\"padding:8px 10px;text-align:center;color:#dc2626;font-weight:bold\">${a.avg_score}</td><td style=\"padding:8px 10px;text-align:center\">${a.conversation_count}</td></tr>`).join('') : '<tr><td colspan=\"3\" style=\"padding:12px;text-align:center;color:#6b7280;font-style:italic\">No agent flags today</td></tr>';\nconst html = `<!DOCTYPE html><html><body style=\"margin:0;padding:0;background:#f3f4f6;font-family:Arial,sans-serif\"><table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f3f4f6;padding:20px 0\"><tr><td align=\"center\"><table width=\"600\" cellpadding=\"0\" cellspacing=\"0\">${pendingBanner}<tr><td style=\"background:#1a1a2e;padding:24px 28px;border-radius:8px 8px 0 0\"><h1 style=\"margin:0;color:#fff;font-size:20px\">Daily Chat QA Report</h1><p style=\"margin:6px 0 0;color:#94a3b8;font-size:14px\">${m.date}</p></td></tr><tr><td style=\"background:#fff;padding:20px 28px\"><table width=\"100%\"><tr><td width=\"25%\" style=\"text-align:center;padding:12px 6px\"><div style=\"font-size:32px;font-weight:bold;color:#1a1a2e\">${m.total_analyzed}</div><div style=\"font-size:12px;color:#6b7280\">Total</div></td><td width=\"25%\" style=\"text-align:center;padding:12px 6px;border-left:1px solid #e5e7eb\"><div style=\"font-size:32px;font-weight:bold;color:${satColor}\">${m.satisfaction_rate}%</div><div style=\"font-size:12px;color:#6b7280\">Satisfaction</div></td><td width=\"25%\" style=\"text-align:center;padding:12px 6px;border-left:1px solid #e5e7eb\"><div style=\"font-size:32px;font-weight:bold;color:#dc2626\">${m.critical_count}</div><div style=\"font-size:12px;color:#6b7280\">Critical</div></td><td width=\"25%\" style=\"text-align:center;padding:12px 6px;border-left:1px solid #e5e7eb\"><div style=\"font-size:32px;font-weight:bold;color:#ea580c\">${m.high_count}</div><div style=\"font-size:12px;color:#6b7280\">High</div></td></tr></table></td></tr>${m.critical_high_items.length>0?`<tr><td style=\"background:#fff;padding:20px 28px;border-top:1px solid #e5e7eb\"><h2 style=\"margin:0 0 14px;font-size:16px;color:#1a1a2e\">Critical & High Priority</h2><table width=\"100%\" style=\"border-collapse:collapse;border:1px solid #e5e7eb\"><thead><tr style=\"background:#f1f5f9\"><th style=\"padding:8px 10px;text-align:left;font-size:11px;color:#6b7280\">Conv ID</th><th style=\"padding:8px 10px;text-align:left;font-size:11px;color:#6b7280\">Agent</th><th style=\"padding:8px 10px;text-align:left;font-size:11px;color:#6b7280\">Category</th><th style=\"padding:8px 10px;text-align:left;font-size:11px;color:#6b7280\">Sev</th><th style=\"padding:8px 10px;text-align:left;font-size:11px;color:#6b7280\">Action</th><th style=\"padding:8px 10px;text-align:left;font-size:11px;color:#6b7280\">Link</th></tr></thead><tbody>${critHighRows}</tbody></table></td></tr>`:'<tr><td></td></tr>'}<tr><td style=\"background:#fff;padding:20px 28px;border-top:1px solid #e5e7eb\"><h2 style=\"margin:0 0 14px;font-size:16px;color:#1a1a2e\">Top Issues</h2><table width=\"100%\" style=\"border-collapse:collapse;border:1px solid #e5e7eb\"><thead><tr style=\"background:#f1f5f9\"><th style=\"padding:8px 10px;font-size:11px;color:#6b7280\">#</th><th style=\"padding:8px 10px;font-size:11px;color:#6b7280\">Category</th><th style=\"padding:8px 10px;font-size:11px;color:#6b7280\">Count</th></tr></thead><tbody>${topRows}</tbody></table></td></tr><tr><td style=\"background:#fff;padding:20px 28px;border-top:1px solid #e5e7eb\"><h2 style=\"margin:0 0 14px;font-size:16px;color:#1a1a2e\">Agent Flags</h2><table width=\"100%\" style=\"border-collapse:collapse;border:1px solid #e5e7eb\"><thead><tr style=\"background:#f1f5f9\"><th style=\"padding:8px 10px;font-size:11px;color:#6b7280\">Agent</th><th style=\"padding:8px 10px;font-size:11px;color:#6b7280\">Avg Score</th><th style=\"padding:8px 10px;font-size:11px;color:#6b7280\">Convos</th></tr></thead><tbody>${flagRows}</tbody></table></td></tr><tr><td style=\"background:#f1f5f9;padding:16px 28px;border-radius:0 0 8px 8px;border-top:1px solid #e5e7eb\"><p style=\"margin:0;font-size:11px;color:#9ca3af;text-align:center\">Generated by Chat QA System \u2022 ${m.generated_at} \u2022 AI analysis \u2014 for human review</p></td></tr></table></td></tr></table></body></html>`;\nconst subject = `[QA Report] ${m.date} \u2014 ${m.total_analyzed} convos, ${m.satisfaction_rate}% satisfaction${m.critical_count>0?`, ${m.critical_count} CRITICAL`:''}`;\nreturn [{ json: { subject, html_body: html, plain_text: `Daily QA Report ${m.date}: ${m.total_analyzed} conversations, ${m.satisfaction_rate}% satisfaction, ${m.critical_count} critical, ${m.high_count} high`, metrics: m } }];"
       },
       "id": "d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a",
       "name": "Build Email HTML",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        768,
-        304
-      ]
+      "position": [760, 300]
     },
     {
       "parameters": {
         "operation": "send",
-        "sendTo": "hannahporter1905@gmail.com",
+        "sendTo": "={{ $env.GMAIL_DISTRIBUTION_LIST }}",
         "subject": "={{ $json.subject }}",
         "message": "={{ $json.html_body }}",
-        "options": {}
+        "options": {"replyTo": "", "attachmentsUi": {"attachmentsBinary": []}}
       },
       "id": "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b",
       "name": "Send Gmail Report",
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
-      "position": [
-        992,
-        304
-      ],
-      "webhookId": "fdbf6c65-6398-464a-aaef-09662d1bc411",
-      "credentials": {
-        "gmailOAuth2": {
-          "id": "OiN6z9XeWBBbnFbC",
-          "name": "AI CHAT"
-        }
-      }
+      "position": [980, 300],
+      "credentials": {"gmailOAuth2": {"id": "gmail_oauth", "name": "gmail_oauth"}}
     },
     {
       "parameters": {
-        "jsCode": "const m = $('Compile Metrics').first().json;\n\nconst satEmoji = m.satisfaction_rate >= 80 ? ':white_check_mark:' : m.satisfaction_rate >= 60 ? ':warning:' : ':red_circle:';\n\n// Header + stats\nconst header = `:bar_chart: *Daily Chat QA Report \u2014 ${m.date}*`;\nconst stats = `*Total:* ${m.total_analyzed}  |  ${satEmoji} *Satisfaction:* ${m.satisfaction_rate}%  |  :rotating_light: *Critical:* ${m.critical_count}  |  *High:* ${m.high_count}  |  *Med:* ${m.medium_count}  |  *Low:* ${m.low_count}`;\n\n// Critical & High Priority\nlet critHigh = '*:red_circle: Critical & High Priority*';\nif (m.critical_high_items.length > 0) {\n  critHigh += '\\n' + m.critical_high_items.slice(0, 10).map(i => {\n    const action = i.recommended_action ? (i.recommended_action.length > 120 ? i.recommended_action.substring(0, 120) + '...' : i.recommended_action) : 'N/A';\n    return `>*[${i.severity}]* ${i.agent_name}  |  _${i.issue_category}_\\n>${action}  |  <${i.intercom_link}|View>`;\n  }).join('\\n');\n} else {\n  critHigh += '\\n>_None today_';\n}\n\n// Top Issues\nconst topIssues = '*:clipboard: Top Issues*\\n' + m.top_issues.map((i, idx) => `>${idx + 1}. ${i.category}: *${i.count}*`).join('\\n');\n\n// Agent Flags\nconst agentFlags = '*:triangular_flag_on_post: Agent Flags* _(avg score \u2264 2)_\\n' +\n  (m.agent_flags.length > 0\n    ? m.agent_flags.map(a => `>\u2022 ${a.agent_name}: avg *${a.avg_score}* (${a.conversation_count} convos)`).join('\\n')\n    : '>_None today_');\n\nconst fullText = [header, stats, '', critHigh, '', topIssues, '', agentFlags].join('\\n');\n\nreturn [{ json: { text: fullText } }];\n"
+        "jsCode": "const m = $('Compile Metrics').first().json;\nconst satEmoji = m.satisfaction_rate >= 80 ? ':white_check_mark:' : m.satisfaction_rate >= 60 ? ':warning:' : ':red_circle:';\nconst topIssuesText = m.top_issues.slice(0,5).map((i,idx) => `${idx+1}. ${i.category}: *${i.count}*`).join('\\n');\nconst agentFlagsText = m.agent_flags.length > 0 ? m.agent_flags.map(a => `\u2022 ${a.agent_name}: avg *${a.avg_score}*`).join('\\n') : '_None today_';\nconst critHighText = m.critical_high_items.length > 0 ? m.critical_high_items.slice(0,5).map(i => `\u2022 [${i.severity}] ${i.issue_category} \u2014 ${i.agent_name} | <${i.intercom_link}|View>`).join('\\n') : '_None today_';\nconst blocks = [{ type: 'header', text: { type: 'plain_text', text: `:bar_chart: Daily QA Report \u2014 ${m.date}`, emoji: true } }, { type: 'section', fields: [{ type: 'mrkdwn', text: `*Total:* ${m.total_analyzed}` }, { type: 'mrkdwn', text: `${satEmoji} *Satisfaction:* ${m.satisfaction_rate}%` }, { type: 'mrkdwn', text: `:rotating_light: *Critical:* ${m.critical_count}` }, { type: 'mrkdwn', text: `*High/Med/Low:* ${m.high_count}/${m.medium_count}/${m.low_count}` }] }, { type: 'divider' }, { type: 'section', text: { type: 'mrkdwn', text: `*Critical & High:*\\n${critHighText}` } }, { type: 'section', fields: [{ type: 'mrkdwn', text: `*Top Issues:*\\n${topIssuesText}` }, { type: 'mrkdwn', text: `*Agent Flags:*\\n${agentFlagsText}` }] }];\nif (m.pending_analysis_count > 0) { blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `:warning: *${m.pending_analysis_count} conversations still pending analysis* \u2014 report may be incomplete.` } }); }\nreturn [{ json: { blocks, text: `QA Report ${m.date}: ${m.total_analyzed} convos, ${m.satisfaction_rate}% satisfaction` } }];"
       },
       "id": "f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c",
       "name": "Build Slack Summary",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [
-        1200,
-        304
-      ]
+      "position": [1200, 300]
     },
     {
       "parameters": {
         "operation": "post",
-        "channel": "#chat-qa-reports",
+        "channel": "={{ $env.SLACK_CHANNEL_REPORTS }}",
         "text": "={{ $json.text }}",
+        "blocksUi": "={{ JSON.stringify($json.blocks) }}",
         "otherOptions": {}
       },
       "id": "a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c1d",
       "name": "Post to Slack",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 1,
-      "position": [
-        1424,
-        304
-      ],
-      "credentials": {
-        "slackApi": {
-          "id": "hL15CNwvuUXEcOGh",
-          "name": "Slack"
-        }
-      }
+      "position": [1420, 300],
+      "credentials": {"slackApi": {"id": "slack_api", "name": "slack_api"}}
     },
     {
       "parameters": {
-        "tableId": "qa_daily_reports",
+        "operation": "create",
+        "tableId": "report_log",
         "fieldsUi": {
           "fieldValues": [
-            {
-              "fieldId": "date",
-              "fieldValue": "={{ $('Compile Metrics').first().json.date }}"
-            },
-            {
-              "fieldId": "total_analyzed",
-              "fieldValue": "={{ $('Compile Metrics').first().json.total_analyzed }}"
-            },
-            {
-              "fieldId": "critical_count",
-              "fieldValue": "={{ $('Compile Metrics').first().json.critical_count }}"
-            },
-            {
-              "fieldId": "high_count",
-              "fieldValue": "={{ $('Compile Metrics').first().json.high_count }}"
-            },
-            {
-              "fieldId": "medium_count",
-              "fieldValue": "={{ $('Compile Metrics').first().json.medium_count }}"
-            },
-            {
-              "fieldId": "low_count",
-              "fieldValue": "={{ $('Compile Metrics').first().json.low_count }}"
-            },
-            {
-              "fieldId": "satisfaction_rate",
-              "fieldValue": "={{ $('Compile Metrics').first().json.satisfaction_rate }}"
-            },
-            {
-              "fieldId": "sent_at",
-              "fieldValue": "={{ new Date().toISOString() }}"
-            }
+            {"fieldId": "date", "fieldValue": "={{ $('Compile Metrics').first().json.date }}"},
+            {"fieldId": "total_analyzed", "fieldValue": "={{ $('Compile Metrics').first().json.total_analyzed }}"},
+            {"fieldId": "critical_count", "fieldValue": "={{ $('Compile Metrics').first().json.critical_count }}"},
+            {"fieldId": "high_count", "fieldValue": "={{ $('Compile Metrics').first().json.high_count }}"},
+            {"fieldId": "medium_count", "fieldValue": "={{ $('Compile Metrics').first().json.medium_count }}"},
+            {"fieldId": "low_count", "fieldValue": "={{ $('Compile Metrics').first().json.low_count }}"},
+            {"fieldId": "satisfaction_rate", "fieldValue": "={{ $('Compile Metrics').first().json.satisfaction_rate }}"},
+            {"fieldId": "sent_at", "fieldValue": "={{ new Date().toISOString() }}"}
           ]
         }
       },
+      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
       "id": "b8c9d0e1-f2a3-4b4c-5d6e-7f8a9b0c1d2e",
       "name": "Log to Report Log",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [
-        1648,
-        304
-      ],
-      "credentials": {
-        "supabaseApi": {
-          "id": "48UlSg2STuVckZm2",
-          "name": "Supabase account 2"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "// Read Pending Count returns 0 items when all conversations are analyzed.\n// This node always outputs exactly 1 item so the chain never stops.\nconst items = $input.all();\nconst pendingCount = items.filter(i => i.json && i.json.conversation_id).length;\nreturn [{ json: { pending_count: pendingCount } }];"
-      },
-      "id": "wf3-normalize-pending-001",
-      "name": "Normalize Pending Count",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        128,
-        528
-      ]
+      "position": [1640, 300]
     }
   ],
   "connections": {
-    "Read Analysis Results": {
-      "main": [
-        [
-          {
-            "node": "Compile Metrics",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Compile Metrics": {
-      "main": [
-        [
-          {
-            "node": "Build Email HTML",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Build Email HTML": {
-      "main": [
-        [
-          {
-            "node": "Send Gmail Report",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Send Gmail Report": {
-      "main": [
-        [
-          {
-            "node": "Build Slack Summary",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Build Slack Summary": {
-      "main": [
-        [
-          {
-            "node": "Post to Slack",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Post to Slack": {
-      "main": [
-        [
-          {
-            "node": "Log to Report Log",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Read Pending Count": {
-      "main": [
-        [
-          {
-            "node": "Normalize Pending Count",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Schedule Trigger": {
-      "main": [
-        [
-          {
-            "node": "Read Analysis Results",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
+    "Schedule Trigger": {"main": [[{"node": "Read Pending Count", "type": "main", "index": 0}]]},
+    "Read Pending Count": {"main": [[{"node": "Read Analysis Results", "type": "main", "index": 0}]]},
+    "Read Analysis Results": {"main": [[{"node": "Compile Metrics", "type": "main", "index": 0}]]},
+    "Compile Metrics": {"main": [[{"node": "Build Email HTML", "type": "main", "index": 0}]]},
+    "Build Email HTML": {"main": [[{"node": "Send Gmail Report", "type": "main", "index": 0}]]},
+    "Send Gmail Report": {"main": [[{"node": "Build Slack Summary", "type": "main", "index": 0}]]},
+    "Build Slack Summary": {"main": [[{"node": "Post to Slack", "type": "main", "index": 0}]]},
+    "Post to Slack": {"main": [[{"node": "Log to Report Log", "type": "main", "index": 0}]]}
   },
-  "settings": {
-    "executionOrder": "v1",
-    "callerPolicy": "workflowsFromSameOwner",
-    "availableInMCP": false
-  }
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "id": "wf3-daily-summary-report"
 }
