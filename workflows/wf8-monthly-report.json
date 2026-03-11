@@ -3,9 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [{"field": "cronExpression", "expression": "0 8 1 * *"}]
-        }
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 8 1 * *" }] }
       },
       "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567892",
       "name": "Schedule 1st of Month",
@@ -15,90 +13,63 @@
     },
     {
       "parameters": {
+        "resource": "row",
         "operation": "getAll",
-        "tableId": "analysis_results",
-        "returnAll": true,
-        "filters": {
-          "values": [
-            {
-              "keyName": "analyzed_at",
-              "condition": "gte",
-              "keyValue": "={{ new Date(new Date().getFullYear(), new Date().getMonth()-1, 1).toISOString() }}"
-            },
-            {
-              "keyName": "analyzed_at",
-              "condition": "lte",
-              "keyValue": "={{ new Date(new Date().getFullYear(), new Date().getMonth(), 0, 23, 59, 59).toISOString() }}"
-            }
-          ]
-        }
+        "tableId": "qa_analysis",
+        "returnAll": true
       },
-      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
       "id": "b2c3d4e5-f6a7-8901-bcde-f12345678903",
       "name": "Read Analysis Results",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [320, 200]
+      "position": [320, 200],
+      "credentials": {
+        "supabaseApi": {
+          "id": "48UlSg2STuVckZm2",
+          "name": "Supabase account 2"
+        }
+      }
     },
     {
       "parameters": {
+        "resource": "row",
         "operation": "getAll",
-        "tableId": "accuracy_log",
-        "returnAll": true,
-        "filters": {
-          "values": [
-            {
-              "keyName": "date",
-              "condition": "gte",
-              "keyValue": "={{ new Date(new Date().getFullYear(), new Date().getMonth()-1, 1).toISOString().split('T')[0] }}"
-            },
-            {
-              "keyName": "date",
-              "condition": "lte",
-              "keyValue": "={{ new Date(new Date().getFullYear(), new Date().getMonth(), 0).toISOString().split('T')[0] }}"
-            }
-          ]
-        }
+        "tableId": "qa_accuracy",
+        "returnAll": true
       },
-      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
       "id": "c3d4e5f6-a7b8-9012-cdef-123456789014",
       "name": "Read Accuracy Log",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [320, 400]
+      "position": [320, 400],
+      "credentials": {
+        "supabaseApi": {
+          "id": "48UlSg2STuVckZm2",
+          "name": "Supabase account 2"
+        }
+      }
     },
     {
       "parameters": {
+        "resource": "row",
         "operation": "getAll",
-        "tableId": "alert_log",
-        "returnAll": true,
-        "filters": {
-          "values": [
-            {
-              "keyName": "date",
-              "condition": "gte",
-              "keyValue": "={{ new Date(new Date().getFullYear(), new Date().getMonth()-1, 1).toISOString().split('T')[0] }}"
-            },
-            {
-              "keyName": "date",
-              "condition": "lte",
-              "keyValue": "={{ new Date(new Date().getFullYear(), new Date().getMonth(), 0).toISOString().split('T')[0] }}"
-            }
-          ]
-        }
+        "tableId": "qa_alerts",
+        "returnAll": true
       },
-      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
       "id": "d4e5f6a7-b8c9-0123-defa-234567890125",
       "name": "Read Alert Log",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [320, 560]
+      "position": [320, 560],
+      "credentials": {
+        "supabaseApi": {
+          "id": "48UlSg2STuVckZm2",
+          "name": "Supabase account 2"
+        }
+      }
     },
     {
-      "parameters": {
-        "mode": "append",
-        "options": {}
-      },
+      "parameters": { "mode": "append", "options": {} },
       "id": "wf8-merge-all-data-001",
       "name": "Merge All Data",
       "type": "n8n-nodes-base.merge",
@@ -107,7 +78,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Get previous month boundaries\nconst now = new Date();\nconst prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);\nconst prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);\nconst month = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}`;\nconst monthLabel = prevMonthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });\nconst monthStart = prevMonthDate.toISOString().split('T')[0];\nconst monthEnd = prevMonthEnd.toISOString().split('T')[0];\n\n// Filter analysis results to previous month\nconst allAnalysis = $('Read Analysis Results').all().map(i => i.json);\nconst analysisRows = allAnalysis.filter(row => {\n  const date = (row.analyzed_at || row[13] || '').split('T')[0];\n  return date >= monthStart && date <= monthEnd;\n});\n\n// Filter accuracy log to previous month\nconst allAccuracy = $('Read Accuracy Log').all().map(i => i.json);\nconst accuracyRows = allAccuracy.filter(row => {\n  const date = row.date || row[0] || '';\n  return date >= monthStart && date <= monthEnd;\n});\n\n// Filter alert log to previous month\nconst allAlerts = $('Read Alert Log').all().map(i => i.json);\nconst alertRows = allAlerts.filter(row => {\n  const date = row.date || row[1] || '';\n  return date >= monthStart && date <= monthEnd;\n});\n\n// Compile analysis metrics\nconst totalConversations = analysisRows.length;\nconst severityCounts = { Critical: 0, High: 0, Medium: 0, Low: 0 };\nconst categoryCounts = {};\nconst agentScores = {};\nconst resolutionCounts = { Resolved: 0, Unresolved: 0, 'Partially Resolved': 0 };\n\nfor (const row of analysisRows) {\n  const severity = row.severity || row[4] || 'Low';\n  const category = row.issue_category || row[5] || 'Other';\n  const resolution = row.resolution_status || row[6] || 'Unresolved';\n  const agentName = row.agent_name || row[2] || 'Unknown';\n  const agentScore = parseInt(row.agent_score || row[8] || 3, 10);\n  if (severityCounts.hasOwnProperty(severity)) severityCounts[severity]++;\n  categoryCounts[category] = (categoryCounts[category] || 0) + 1;\n  if (resolutionCounts.hasOwnProperty(resolution)) resolutionCounts[resolution]++;\n  if (!agentScores[agentName]) agentScores[agentName] = { total: 0, count: 0 };\n  agentScores[agentName].total += agentScore;\n  agentScores[agentName].count++;\n}\n\nconst satisfactionRate = totalConversations > 0 ? Math.round((severityCounts.Low / totalConversations) * 1000) / 10 : 0;\nconst resolutionRate = totalConversations > 0 ? Math.round((resolutionCounts.Resolved / totalConversations) * 1000) / 10 : 0;\n\nconst topIssues = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([category, count]) => ({ category, count, pct_of_total: totalConversations > 0 ? Math.round((count / totalConversations) * 1000) / 10 : 0 }));\n\nconst agentRankings = Object.entries(agentScores).map(([name, data]) => ({ agent_name: name, avg_score: Math.round((data.total / data.count) * 10) / 10, conversation_count: data.count })).sort((a, b) => b.avg_score - a.avg_score);\n\n// Accuracy metrics\nconst avgAccuracy = accuracyRows.length > 0 ? Math.round(accuracyRows.reduce((sum, r) => sum + parseFloat(r.accuracy_rate || r[4] || 0), 0) / accuracyRows.length * 1000) / 1000 : null;\nconst catDisagreements = {};\nfor (const row of accuracyRows) { const cat = row.worst_category || row[5] || ''; if (cat && cat !== 'N/A') catDisagreements[cat] = (catDisagreements[cat] || 0) + 1; }\nconst worstAccuracyCategory = Object.entries(catDisagreements).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';\n\n// Alert metrics\nconst totalAlerts = alertRows.length;\nconst criticalAlerts = alertRows.filter(r => (r.severity || r[5]) === 'Critical').length;\n\nconst metrics = { month: monthLabel, month_id: month, total_conversations: totalConversations, severity_breakdown: severityCounts, satisfaction_rate: satisfactionRate, resolution_rate: resolutionRate, top_issues: topIssues, agent_rankings: agentRankings, ai_accuracy_rate: avgAccuracy, worst_accuracy_category: worstAccuracyCategory, total_alerts: totalAlerts, critical_alerts: criticalAlerts };\n\nreturn [{ json: { month, month_label: monthLabel, total_conversations: totalConversations, satisfaction_rate: satisfactionRate, top_issues: JSON.stringify(topIssues), accuracy_rate: avgAccuracy || 0, metrics_json: JSON.stringify(metrics, null, 2) } }];"
+        "jsCode": "const now = new Date();\nconst prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);\nconst prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);\nconst month = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}`;\nconst monthLabel = prevMonthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });\nconst monthStart = prevMonthDate.toISOString().split('T')[0];\nconst monthEnd = prevMonthEnd.toISOString().split('T')[0];\nconst allAnalysis = $('Read Analysis Results').all().map(i => i.json);\nconst analysisRows = allAnalysis.filter(row => { const date = (row.analyzed_at || row[13] || '').split('T')[0]; return date >= monthStart && date <= monthEnd; });\nconst allAccuracy = $('Read Accuracy Log').all().map(i => i.json);\nconst accuracyRows = allAccuracy.filter(row => { const date = row.date || row[0] || ''; return date >= monthStart && date <= monthEnd; });\nconst allAlerts = $('Read Alert Log').all().map(i => i.json);\nconst alertRows = allAlerts.filter(row => { const date = row.date || row[1] || ''; return date >= monthStart && date <= monthEnd; });\nconst totalConversations = analysisRows.length;\nconst severityCounts = { Critical: 0, High: 0, Medium: 0, Low: 0 };\nconst categoryCounts = {};\nconst agentScores = {};\nconst resolutionCounts = { Resolved: 0, Unresolved: 0, 'Partially Resolved': 0 };\nfor (const row of analysisRows) {\n  const severity = row.severity || row[4] || 'Low';\n  const category = row.issue_category || row[5] || 'Other';\n  const resolution = row.resolution_status || row[6] || 'Unresolved';\n  const agentName = row.agent_name || row[2] || 'Unknown';\n  const agentScore = parseInt(row.agent_score || row[8] || 3, 10);\n  if (severityCounts.hasOwnProperty(severity)) severityCounts[severity]++;\n  categoryCounts[category] = (categoryCounts[category] || 0) + 1;\n  if (resolutionCounts.hasOwnProperty(resolution)) resolutionCounts[resolution]++;\n  if (!agentScores[agentName]) agentScores[agentName] = { total: 0, count: 0 };\n  agentScores[agentName].total += agentScore;\n  agentScores[agentName].count++;\n}\nconst satisfactionRate = totalConversations > 0 ? Math.round((severityCounts.Low / totalConversations) * 1000) / 10 : 0;\nconst resolutionRate = totalConversations > 0 ? Math.round((resolutionCounts.Resolved / totalConversations) * 1000) / 10 : 0;\nconst topIssues = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([category, count]) => ({ category, count, pct_of_total: totalConversations > 0 ? Math.round((count / totalConversations) * 1000) / 10 : 0 }));\nconst agentRankings = Object.entries(agentScores).map(([name, data]) => ({ agent_name: name, avg_score: Math.round((data.total / data.count) * 10) / 10, conversation_count: data.count })).sort((a, b) => b.avg_score - a.avg_score);\nconst avgAccuracy = accuracyRows.length > 0 ? Math.round(accuracyRows.reduce((sum, r) => sum + parseFloat(r.accuracy_rate || r[4] || 0), 0) / accuracyRows.length * 1000) / 1000 : null;\nconst catDisagreements = {};\nfor (const row of accuracyRows) { const cat = row.worst_category || row[5] || ''; if (cat && cat !== 'N/A') catDisagreements[cat] = (catDisagreements[cat] || 0) + 1; }\nconst worstAccuracyCategory = Object.entries(catDisagreements).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';\nconst totalAlerts = alertRows.length;\nconst criticalAlerts = alertRows.filter(r => (r.severity || r[5]) === 'Critical').length;\nconst metrics = { month: monthLabel, month_id: month, total_conversations: totalConversations, severity_breakdown: severityCounts, satisfaction_rate: satisfactionRate, resolution_rate: resolutionRate, top_issues: topIssues, agent_rankings: agentRankings, ai_accuracy_rate: avgAccuracy, worst_accuracy_category: worstAccuracyCategory, total_alerts: totalAlerts, critical_alerts: criticalAlerts };\nreturn [{ json: { month, month_label: monthLabel, total_conversations: totalConversations, satisfaction_rate: satisfactionRate, top_issues: JSON.stringify(topIssues), accuracy_rate: avgAccuracy || 0, metrics_json: JSON.stringify(metrics, null, 2) } }];"
       },
       "id": "e5f6a7b8-c9d0-1234-efab-345678901236",
       "name": "Compile Monthly Metrics",
@@ -125,10 +96,8 @@
         "specifyBody": "json",
         "jsonBody": "={\n  \"model\": \"claude-sonnet-4-6\",\n  \"max_tokens\": 4000,\n  \"system\": \"You are a senior QA analyst generating a monthly performance report for an iGaming customer support operation. Generate a complete, self-contained HTML email report with INLINE CSS ONLY (no style tags). The report must render in Gmail, Outlook, and Apple Mail. Max width 600px. Font: Arial. Include: 1) Header with month/date, 2) DRAFT warning banner, 3) Executive summary (2-3 paragraphs), 4) Key metrics table (total conversations, satisfaction rate, AI accuracy, total alerts), 5) Top 10 issue categories table, 6) Agent performance table (highlight score<3 red, score>=4.5 green), 7) AI Accuracy section, 8) Recommendations list (3-5 numbered items), 9) Footer with draft disclaimer. Return ONLY the HTML document starting with <!DOCTYPE html>.\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Generate the monthly QA report for {{ $json.month_label }}.\\n\\nMetrics:\\n{{ $json.metrics_json }}\"\n    }\n  ]\n}",
         "options": {
-          "retry": {"enabled": true, "maxTries": 3},
-          "headers": {
-            "parameters": [{"name": "anthropic-version", "value": "2023-06-01"}]
-          }
+          "retry": { "enabled": true, "maxTries": 3 },
+          "headers": { "parameters": [{ "name": "anthropic-version", "value": "2023-06-01" }] }
         }
       },
       "id": "f6a7b8c9-d0e1-2345-fabc-456789012347",
@@ -136,11 +105,16 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [820, 300],
-      "credentials": {"httpHeaderAuth": {"id": "anthropic_api", "name": "Anthropic API"}}
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "su9fcyK1Y1pb286K",
+          "name": "Anthropic API"
+        }
+      }
     },
     {
       "parameters": {
-        "jsCode": "const claudeResponse = $input.first().json;\nconst metricsData = $('Compile Monthly Metrics').first().json;\nconst reportHtml = claudeResponse.content?.[0]?.text || '<p>Error generating report</p>';\nreturn [{ json: { month: metricsData.month, month_label: metricsData.month_label, total_conversations: metricsData.total_conversations, satisfaction_rate: metricsData.satisfaction_rate, top_issues: metricsData.top_issues, accuracy_rate: metricsData.accuracy_rate, report_html: reportHtml, status: 'draft', generated_at: new Date().toISOString(), gmail_subject: `[DRAFT] Monthly QA Report \u2014 ${metricsData.month_label}` } }];"
+        "jsCode": "const claudeResponse = $input.first().json;\nconst metricsData = $('Compile Monthly Metrics').first().json;\nconst reportHtml = claudeResponse.content?.[0]?.text || '<p>Error generating report</p>';\nreturn [{ json: { month: metricsData.month, month_label: metricsData.month_label, total_conversations: metricsData.total_conversations, satisfaction_rate: metricsData.satisfaction_rate, top_issues: metricsData.top_issues, accuracy_rate: metricsData.accuracy_rate, report_html: reportHtml, status: 'draft', generated_at: new Date().toISOString(), gmail_subject: `[DRAFT] Monthly QA Report — ${metricsData.month_label}` } }];"
       },
       "id": "a7b8c9d0-e1f2-3456-abcd-567890123458",
       "name": "Parse Monthly Report",
@@ -151,7 +125,7 @@
     {
       "parameters": {
         "operation": "send",
-        "sendTo": "={{ $env.QA_MANAGER_EMAIL }}",
+        "sendTo": "hannahporter1905@gmail.com",
         "subject": "={{ $json.gmail_subject }}",
         "message": "={{ $json.report_html }}",
         "options": {}
@@ -161,12 +135,17 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [1300, 300],
-      "credentials": {"gmailOAuth2": {"id": "gmail_oauth", "name": "gmail_oauth"}}
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail_oauth",
+          "name": "gmail_oauth"
+        }
+      }
     },
     {
       "parameters": {
         "operation": "post",
-        "channel": "={{ $env.QA_MANAGER_SLACK_ID }}",
+        "channel": "U0AJA0P3JP6",
         "text": "={{ ':bar_chart: Monthly QA Report for ' + $('Parse Monthly Report').first().json.month_label + ' is ready in your inbox as a DRAFT. Please review before distribution.' }}",
         "otherOptions": {}
       },
@@ -175,54 +154,59 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 1,
       "position": [1520, 300],
-      "credentials": {"slackApi": {"id": "slack_api", "name": "slack_api"}}
+      "credentials": {
+        "slackApi": {
+          "id": "slack_api",
+          "name": "slack_api"
+        }
+      }
     },
     {
       "parameters": {
+        "resource": "row",
         "operation": "create",
-        "tableId": "monthly_reports",
+        "tableId": "qa_monthly_reports",
+        "dataToSend": "defineBelow",
         "fieldsUi": {
           "fieldValues": [
-            {"fieldId": "month", "fieldValue": "={{ $('Parse Monthly Report').first().json.month }}"},
-            {"fieldId": "total_conversations", "fieldValue": "={{ $('Parse Monthly Report').first().json.total_conversations }}"},
-            {"fieldId": "satisfaction_rate", "fieldValue": "={{ $('Parse Monthly Report').first().json.satisfaction_rate }}"},
-            {"fieldId": "top_issues", "fieldValue": "={{ $('Parse Monthly Report').first().json.top_issues }}"},
-            {"fieldId": "accuracy_rate", "fieldValue": "={{ $('Parse Monthly Report').first().json.accuracy_rate }}"},
-            {"fieldId": "report_html", "fieldValue": "={{ $('Parse Monthly Report').first().json.report_html }}"},
-            {"fieldId": "status", "fieldValue": "draft"},
-            {"fieldId": "generated_at", "fieldValue": "={{ $('Parse Monthly Report').first().json.generated_at }}"}
+            { "fieldId": "month", "fieldValue": "={{ $('Parse Monthly Report').first().json.month }}" },
+            { "fieldId": "total_conversations", "fieldValue": "={{ $('Parse Monthly Report').first().json.total_conversations }}" },
+            { "fieldId": "satisfaction_rate", "fieldValue": "={{ $('Parse Monthly Report').first().json.satisfaction_rate }}" },
+            { "fieldId": "top_issues", "fieldValue": "={{ $('Parse Monthly Report').first().json.top_issues }}" },
+            { "fieldId": "accuracy_rate", "fieldValue": "={{ $('Parse Monthly Report').first().json.accuracy_rate }}" },
+            { "fieldId": "report_html", "fieldValue": "={{ $('Parse Monthly Report').first().json.report_html }}" },
+            { "fieldId": "status", "fieldValue": "draft" },
+            { "fieldId": "generated_at", "fieldValue": "={{ $('Parse Monthly Report').first().json.generated_at }}" }
           ]
         }
       },
-      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
       "id": "d0e1f2a3-b4c5-6789-defa-890123456780",
       "name": "Store in Monthly Reports",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [1740, 300]
+      "position": [1740, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "48UlSg2STuVckZm2",
+          "name": "Supabase account 2"
+        }
+      }
     }
   ],
   "connections": {
-    "Schedule 1st of Month": {
-      "main": [
-        [
-          {"node": "Read Analysis Results", "type": "main", "index": 0},
-          {"node": "Read Accuracy Log", "type": "main", "index": 0},
-          {"node": "Read Alert Log", "type": "main", "index": 0}
-        ]
-      ]
-    },
-    "Read Analysis Results": {"main": [[{"node": "Merge All Data", "type": "main", "index": 0}]]},
-    "Read Accuracy Log": {"main": [[{"node": "Merge All Data", "type": "main", "index": 1}]]},
-    "Read Alert Log": {"main": [[{"node": "Merge All Data", "type": "main", "index": 2}]]},
-    "Merge All Data": {"main": [[{"node": "Compile Monthly Metrics", "type": "main", "index": 0}]]},
-    "Compile Monthly Metrics": {"main": [[{"node": "Generate Monthly Report (Claude)", "type": "main", "index": 0}]]},
-    "Generate Monthly Report (Claude)": {"main": [[{"node": "Parse Monthly Report", "type": "main", "index": 0}]]},
-    "Parse Monthly Report": {"main": [[{"node": "Email to QA Manager", "type": "main", "index": 0}]]},
-    "Email to QA Manager": {"main": [[{"node": "Slack DM to QA Manager", "type": "main", "index": 0}]]},
-    "Slack DM to QA Manager": {"main": [[{"node": "Store in Monthly Reports", "type": "main", "index": 0}]]}
+    "Schedule 1st of Month": { "main": [[{ "node": "Read Analysis Results", "type": "main", "index": 0 }, { "node": "Read Accuracy Log", "type": "main", "index": 0 }, { "node": "Read Alert Log", "type": "main", "index": 0 }]] },
+    "Read Analysis Results": { "main": [[{ "node": "Merge All Data", "type": "main", "index": 0 }]] },
+    "Read Accuracy Log": { "main": [[{ "node": "Merge All Data", "type": "main", "index": 1 }]] },
+    "Read Alert Log": { "main": [[{ "node": "Merge All Data", "type": "main", "index": 1 }]] },
+    "Merge All Data": { "main": [[{ "node": "Compile Monthly Metrics", "type": "main", "index": 0 }]] },
+    "Compile Monthly Metrics": { "main": [[{ "node": "Generate Monthly Report (Claude)", "type": "main", "index": 0 }]] },
+    "Generate Monthly Report (Claude)": { "main": [[{ "node": "Parse Monthly Report", "type": "main", "index": 0 }]] },
+    "Parse Monthly Report": { "main": [[{ "node": "Email to QA Manager", "type": "main", "index": 0 }]] },
+    "Email to QA Manager": { "main": [[{ "node": "Slack DM to QA Manager", "type": "main", "index": 0 }]] },
+    "Slack DM to QA Manager": { "main": [[{ "node": "Store in Monthly Reports", "type": "main", "index": 0 }]] }
   },
-  "active": false,
-  "settings": {"executionOrder": "v1"},
-  "id": "wf8-monthly-report"
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  }
 }

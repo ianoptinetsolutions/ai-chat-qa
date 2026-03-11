@@ -4,56 +4,93 @@
     {
       "parameters": {
         "rule": {
-          "interval": [{"field": "cronExpression", "expression": "*/30 * * * *"}]
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/30 * * * *"
+            }
+          ]
         }
       },
       "id": "b2c3d4e5-0002-0002-0002-000000000001",
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.1,
-      "position": [100, 300]
+      "position": [
+        -128,
+        832
+      ]
     },
     {
       "parameters": {
         "operation": "getAll",
-        "tableId": "raw_conversations",
+        "tableId": "qa_conversations",
         "returnAll": true,
+        "matchType": "allFilters",
         "filters": {
-          "values": [
-            {"keyName": "analysis_status", "condition": "eq", "keyValue": "pending"}
+          "conditions": [
+            {
+              "keyName": "analysis_status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
           ]
         }
       },
-      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
       "id": "b2c3d4e5-0002-0002-0002-000000000002",
       "name": "Read Unanalyzed Conversations",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [320, 300]
+      "position": [
+        176,
+        688
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "48UlSg2STuVckZm2",
+          "name": "Supabase account 2"
+        }
+      }
     },
     {
-      "parameters": {"jsCode": "return $input.all().slice(0, 500);"},
+      "parameters": {
+        "jsCode": "return $input.all().slice(0, 500);"
+      },
       "id": "b2c3d4e5-0002-0002-0002-limit500node1",
       "name": "Limit 500 Per Run",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [430, 300]
+      "position": [
+        448,
+        624
+      ]
     },
     {
-      "parameters": {"batchSize": 1, "options": {}},
+      "parameters": {
+        "options": {}
+      },
       "id": "b2c3d4e5-0002-0002-0002-000000000003",
       "name": "Split In Batches",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
-      "position": [540, 300]
+      "position": [
+        752,
+        688
+      ]
     },
     {
-      "parameters": {"amount": 500, "unit": "milliseconds"},
+      "parameters": {
+        "amount": 15
+      },
       "id": "b2c3d4e5-0002-0002-0002-000000000004",
-      "name": "Wait 500ms",
+      "name": "Wait 15s",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
-      "position": [760, 300]
+      "position": [
+        1008,
+        384
+      ],
+      "webhookId": "80ef04c5-712e-47cb-a591-fd4efb72e06a"
     },
     {
       "parameters": {
@@ -63,7 +100,10 @@
       "name": "Build Claude Request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [980, 300]
+      "position": [
+        1232,
+        384
+      ]
     },
     {
       "parameters": {
@@ -71,254 +111,380 @@
         "url": "https://api.anthropic.com/v1/messages",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
         "sendBody": true,
-        "contentType": "json",
-        "body": "={{ JSON.stringify({ model: $json.model, max_tokens: $json.max_tokens, system: $json.system, messages: $json.messages }) }}",
-        "options": {
-          "retryOnFail": true,
-          "maxTries": 3,
-          "retryInterval": 2000,
-          "headers": {
-            "parameters": [{"name": "anthropic-version", "value": "2023-06-01"}]
-          }
-        }
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({model: $json.model, max_tokens: $json.max_tokens, system: $json.system, messages: $json.messages}) }}",
+        "options": {}
       },
-      "credentials": {"httpHeaderAuth": {"id": "anthropic_api", "name": "Anthropic API"}},
       "id": "b2c3d4e5-0002-0002-0002-000000000006",
       "name": "Call Claude API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1200, 300]
+      "position": [
+        1456,
+        384
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "su9fcyK1Y1pb286K",
+          "name": "Anthropic API"
+        }
+      }
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.first().json;\nconst buildNode = $('Build Claude Request').first().json;\n\nconst analyzedAt = new Date().toISOString();\nconst isBotHandled = buildNode.is_bot_handled === true;\n\nconst VALID_LANGUAGES   = ['ar', 'de', 'el', 'en', 'fi', 'fr', 'it', 'no', 'pt'];\nconst VALID_SEVERITIES  = ['Low', 'Medium', 'High', 'Critical'];\nconst VALID_CATEGORIES  = ['Payment/Withdrawal', 'Game Bug', 'Login/Account', 'Bonus/Promotion', 'Technical Error', 'Slow Response', 'Inappropriate Communication', 'Other'];\nconst VALID_RESOLUTIONS = ['Resolved', 'Partially Resolved', 'Unresolved'];\n\nconst rawContent = response.content?.[0]?.text;\nif (!rawContent) {\n  return [{ json: {\n    _parse_error: true,\n    conversation_id: buildNode.conversation_id || 'unknown',\n    player_id: buildNode.player_id || 'unknown',\n    agent_name: buildNode.agent_name || 'Unknown',\n    intercom_link: buildNode.intercom_link || '',\n    summary: '[PARSE ERROR - manual review required: no content in Claude response]',\n    severity: 'Medium', issue_category: 'Other', resolution_status: 'Unresolved',\n    key_quotes: '', agent_score: null, agent_notes: '', recommended_action: 'Manual review required',\n    is_alert: false, alert_reason: '', is_bot_handled: isBotHandled, language: 'en', analyzed_at: analyzedAt\n  } }];\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(rawContent);\n} catch (parseErr) {\n  return [{ json: {\n    _parse_error: true,\n    conversation_id: buildNode.conversation_id || 'unknown',\n    player_id: buildNode.player_id || 'unknown',\n    agent_name: buildNode.agent_name || 'Unknown',\n    intercom_link: buildNode.intercom_link || '',\n    summary: `[PARSE ERROR - manual review required: ${parseErr.message}]`,\n    severity: 'Medium', issue_category: 'Other', resolution_status: 'Unresolved',\n    key_quotes: '', agent_score: null, agent_notes: '', recommended_action: 'Manual review required',\n    is_alert: false, alert_reason: '', is_bot_handled: isBotHandled, language: 'en', analyzed_at: analyzedAt\n  } }];\n}\n\nlet agentScore;\nif (isBotHandled) {\n  agentScore = null;\n} else {\n  agentScore = Number.isInteger(parsed.agent_performance_score) ? parsed.agent_performance_score : 5;\n}\n\nreturn [{ json: {\n  _parse_error: false,\n  conversation_id: buildNode.conversation_id || 'unknown',\n  player_id: buildNode.player_id || 'unknown',\n  agent_name: buildNode.agent_name || 'Unknown',\n  intercom_link: buildNode.intercom_link || '',\n  summary: parsed.summary || '',\n  severity: VALID_SEVERITIES.includes(parsed.dissatisfaction_severity) ? parsed.dissatisfaction_severity : 'Medium',\n  issue_category: VALID_CATEGORIES.includes(parsed.issue_category) ? parsed.issue_category : 'Other',\n  resolution_status: VALID_RESOLUTIONS.includes(parsed.resolution_status) ? parsed.resolution_status : 'Unresolved',\n  key_quotes: parsed.key_quotes || '',\n  agent_score: agentScore,\n  agent_notes: parsed.agent_performance_notes || '',\n  recommended_action: parsed.recommended_action || '',\n  is_alert: parsed.is_alert_worthy === true,\n  alert_reason: parsed.alert_reason || '',\n  is_bot_handled: isBotHandled,\n  language: VALID_LANGUAGES.includes(parsed.language) ? parsed.language : 'en',\n  analyzed_at: analyzedAt\n} }];"
+        "jsCode": "const response = $input.first().json;\nconst buildNode = $('Build Claude Request').first().json;\n\nconst analyzedAt = new Date().toISOString();\nconst isBotHandled = buildNode.is_bot_handled === true;\n\nconst VALID_LANGUAGES   = ['ar', 'de', 'el', 'en', 'fi', 'fr', 'it', 'no', 'pt'];\nconst VALID_SEVERITIES  = ['Low', 'Medium', 'High', 'Critical'];\nconst VALID_CATEGORIES  = ['Payment/Withdrawal', 'Game Bug', 'Login/Account', 'Bonus/Promotion', 'Technical Error', 'Slow Response', 'Inappropriate Communication', 'Other'];\nconst VALID_RESOLUTIONS = ['Resolved', 'Partially Resolved', 'Unresolved'];\n\nconst rawContent = response.content?.[0]?.text;\nif (!rawContent) {\n  return [{ json: {\n    _parse_error: true,\n    conversation_id: buildNode.conversation_id || 'unknown',\n    player_id: buildNode.player_id || 'unknown',\n    agent_name: buildNode.agent_name || 'Unknown',\n    intercom_link: buildNode.intercom_link || '',\n    summary: '[PARSE ERROR - manual review required: no content in Claude response]',\n    severity: 'Medium', issue_category: 'Other', resolution_status: 'Unresolved',\n    key_quotes: '', agent_score: null, agent_notes: '', recommended_action: 'Manual review required',\n    is_alert: false, alert_reason: '', is_bot_handled: isBotHandled, language: 'en', analyzed_at: analyzedAt\n  } }];\n}\n\n// Strip markdown code blocks (Claude sometimes wraps JSON in ```json ... ```)\nlet cleanContent = rawContent.trim();\nif (cleanContent.startsWith('```')) {\n  cleanContent = cleanContent.replace(/^```(?:json)?\\s*/i, '').replace(/\\s*```\\s*$/i, '').trim();\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(cleanContent);\n} catch (parseErr) {\n  return [{ json: {\n    _parse_error: true,\n    conversation_id: buildNode.conversation_id || 'unknown',\n    player_id: buildNode.player_id || 'unknown',\n    agent_name: buildNode.agent_name || 'Unknown',\n    intercom_link: buildNode.intercom_link || '',\n    summary: `[PARSE ERROR - manual review required: ${parseErr.message}]`,\n    severity: 'Medium', issue_category: 'Other', resolution_status: 'Unresolved',\n    key_quotes: '', agent_score: null, agent_notes: '', recommended_action: 'Manual review required',\n    is_alert: false, alert_reason: '', is_bot_handled: isBotHandled, language: 'en', analyzed_at: analyzedAt\n  } }];\n}\n\nlet agentScore;\nif (isBotHandled) {\n  agentScore = null;\n} else {\n  agentScore = Number.isInteger(parsed.agent_performance_score) ? parsed.agent_performance_score : 5;\n}\n\nreturn [{ json: {\n  _parse_error: false,\n  conversation_id: buildNode.conversation_id || 'unknown',\n  player_id: buildNode.player_id || 'unknown',\n  agent_name: buildNode.agent_name || 'Unknown',\n  intercom_link: buildNode.intercom_link || '',\n  summary: parsed.summary || '',\n  severity: VALID_SEVERITIES.includes(parsed.dissatisfaction_severity) ? parsed.dissatisfaction_severity : 'Medium',\n  issue_category: VALID_CATEGORIES.includes(parsed.issue_category) ? parsed.issue_category : 'Other',\n  resolution_status: VALID_RESOLUTIONS.includes(parsed.resolution_status) ? parsed.resolution_status : 'Unresolved',\n  key_quotes: parsed.key_quotes || '',\n  agent_score: agentScore,\n  agent_notes: parsed.agent_performance_notes || '',\n  recommended_action: parsed.recommended_action || '',\n  is_alert: parsed.is_alert_worthy === true,\n  alert_reason: parsed.alert_reason || '',\n  is_bot_handled: isBotHandled,\n  language: VALID_LANGUAGES.includes(parsed.language) ? parsed.language : 'en',\n  analyzed_at: analyzedAt\n} }];"
       },
       "id": "b2c3d4e5-0002-0002-0002-000000000007",
       "name": "Parse AI Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1420, 300]
+      "position": [
+        1680,
+        384
+      ]
     },
     {
       "parameters": {
         "conditions": {
-          "conditions": [
+          "boolean": [
             {
-              "id": "parse-error-check",
-              "leftValue": "={{ $json._parse_error }}",
-              "rightValue": true,
-              "operator": {"type": "boolean", "operation": "notTrue"}
+              "value1": "={{ $json._parse_error }}"
             }
-          ],
-          "combinator": "and"
+          ]
         }
       },
       "id": "wf2-check-parse-error-001",
       "name": "Parse OK?",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [1530, 300]
+      "typeVersion": 1,
+      "position": [
+        1904,
+        384
+      ]
     },
     {
       "parameters": {
-        "operation": "create",
-        "tableId": "analysis_results",
+        "tableId": "qa_analysis",
         "fieldsUi": {
           "fieldValues": [
-            {"fieldId": "conversation_id",    "fieldValue": "={{ $json.conversation_id }}"},
-            {"fieldId": "player_id",          "fieldValue": "={{ $json.player_id }}"},
-            {"fieldId": "agent_name",         "fieldValue": "={{ $json.agent_name }}"},
-            {"fieldId": "summary",            "fieldValue": "={{ $json.summary }}"},
-            {"fieldId": "severity",           "fieldValue": "={{ $json.severity }}"},
-            {"fieldId": "issue_category",     "fieldValue": "={{ $json.issue_category }}"},
-            {"fieldId": "resolution_status",  "fieldValue": "={{ $json.resolution_status }}"},
-            {"fieldId": "key_quotes",         "fieldValue": "={{ $json.key_quotes }}"},
-            {"fieldId": "agent_score",        "fieldValue": "={{ $json.agent_score }}"},
-            {"fieldId": "agent_notes",        "fieldValue": "={{ $json.agent_notes }}"},
-            {"fieldId": "recommended_action", "fieldValue": "={{ $json.recommended_action }}"},
-            {"fieldId": "is_alert",           "fieldValue": "={{ $json.is_alert }}"},
-            {"fieldId": "alert_reason",       "fieldValue": "={{ $json.alert_reason }}"},
-            {"fieldId": "is_bot_handled",     "fieldValue": "={{ $json.is_bot_handled }}"},
-            {"fieldId": "language",           "fieldValue": "={{ $json.language }}"},
-            {"fieldId": "analyzed_at",        "fieldValue": "={{ $json.analyzed_at }}"},
-            {"fieldId": "intercom_link",      "fieldValue": "={{ $json.intercom_link }}"}
+            {
+              "fieldId": "conversation_id",
+              "fieldValue": "={{ $json.conversation_id }}"
+            },
+            {
+              "fieldId": "player_id",
+              "fieldValue": "={{ $json.player_id }}"
+            },
+            {
+              "fieldId": "agent_name",
+              "fieldValue": "={{ $json.agent_name }}"
+            },
+            {
+              "fieldId": "summary",
+              "fieldValue": "=Parse error: {{ $json._parse_error || 'Claude response could not be parsed' }}"
+            },
+            {
+              "fieldId": "severity",
+              "fieldValue": "Low"
+            },
+            {
+              "fieldId": "issue_category",
+              "fieldValue": "Parse Error"
+            },
+            {
+              "fieldId": "analyzed_at",
+              "fieldValue": "={{ new Date().toISOString() }}"
+            },
+            {
+              "fieldId": "intercom_link",
+              "fieldValue": "={{ $json.intercom_link }}"
+            }
           ]
         }
       },
-      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
       "id": "wf2-write-parse-error-001",
       "name": "Write Parse Error Row",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [1750, 480]
+      "position": [
+        2128,
+        480
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "48UlSg2STuVckZm2",
+          "name": "Supabase account 2"
+        }
+      }
     },
     {
       "parameters": {
-        "operation": "update",
-        "tableId": "raw_conversations",
-        "filters": {
-          "values": [
-            {"keyName": "conversation_id", "condition": "eq", "keyValue": "={{ $json.conversation_id }}"}
+        "method": "PATCH",
+        "url": "=https://mxhfmqhniphzgmbqkymh.supabase.co/rest/v1/{{ $json.is_bot_handled ? 'qa_bot_conversations' : 'qa_conversations' }}?conversation_id=eq.{{ $json.conversation_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
           ]
         },
-        "fieldsUi": {
-          "fieldValues": [
-            {"fieldId": "analysis_status", "fieldValue": "error"}
-          ]
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({analysis_status: 'error'}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
         }
       },
-      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
       "id": "wf2-mark-error-001",
       "name": "Mark Conversation Error",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [1960, 480]
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2352,
+        480
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "48UlSg2STuVckZm2",
+          "name": "Supabase account 2"
+        }
+      }
     },
     {
       "parameters": {
         "operation": "create",
-        "tableId": "analysis_results",
+        "tableId": "qa_analysis",
+        "dataToSend": "defineBelow",
         "fieldsUi": {
           "fieldValues": [
-            {"fieldId": "conversation_id",    "fieldValue": "={{ $json.conversation_id }}"},
-            {"fieldId": "player_id",          "fieldValue": "={{ $json.player_id }}"},
-            {"fieldId": "agent_name",         "fieldValue": "={{ $json.agent_name }}"},
-            {"fieldId": "summary",            "fieldValue": "={{ $json.summary }}"},
-            {"fieldId": "severity",           "fieldValue": "={{ $json.severity }}"},
-            {"fieldId": "issue_category",     "fieldValue": "={{ $json.issue_category }}"},
-            {"fieldId": "resolution_status",  "fieldValue": "={{ $json.resolution_status }}"},
-            {"fieldId": "key_quotes",         "fieldValue": "={{ $json.key_quotes }}"},
-            {"fieldId": "agent_score",        "fieldValue": "={{ $json.agent_score }}"},
-            {"fieldId": "agent_notes",        "fieldValue": "={{ $json.agent_notes }}"},
-            {"fieldId": "recommended_action", "fieldValue": "={{ $json.recommended_action }}"},
-            {"fieldId": "is_alert",           "fieldValue": "={{ $json.is_alert }}"},
-            {"fieldId": "alert_reason",       "fieldValue": "={{ $json.alert_reason }}"},
-            {"fieldId": "is_bot_handled",     "fieldValue": "={{ $json.is_bot_handled }}"},
-            {"fieldId": "language",           "fieldValue": "={{ $json.language }}"},
-            {"fieldId": "analyzed_at",        "fieldValue": "={{ $json.analyzed_at }}"},
-            {"fieldId": "intercom_link",      "fieldValue": "={{ $json.intercom_link }}"}
+            {
+              "fieldId": "conversation_id",
+              "fieldValue": "={{ $json.conversation_id }}"
+            },
+            {
+              "fieldId": "player_id",
+              "fieldValue": "={{ $json.player_id }}"
+            },
+            {
+              "fieldId": "agent_name",
+              "fieldValue": "={{ $json.agent_name }}"
+            },
+            {
+              "fieldId": "intercom_link",
+              "fieldValue": "={{ $json.intercom_link }}"
+            },
+            {
+              "fieldId": "summary",
+              "fieldValue": "={{ $json.summary }}"
+            },
+            {
+              "fieldId": "severity",
+              "fieldValue": "={{ $json.severity }}"
+            },
+            {
+              "fieldId": "issue_category",
+              "fieldValue": "={{ $json.issue_category }}"
+            },
+            {
+              "fieldId": "resolution_status",
+              "fieldValue": "={{ $json.resolution_status }}"
+            },
+            {
+              "fieldId": "key_quotes",
+              "fieldValue": "={{ $json.key_quotes }}"
+            },
+            {
+              "fieldId": "agent_score",
+              "fieldValue": "={{ $json.agent_score }}"
+            },
+            {
+              "fieldId": "agent_notes",
+              "fieldValue": "={{ $json.agent_notes }}"
+            },
+            {
+              "fieldId": "recommended_action",
+              "fieldValue": "={{ $json.recommended_action }}"
+            },
+            {
+              "fieldId": "is_alert",
+              "fieldValue": "={{ $json.is_alert }}"
+            },
+            {
+              "fieldId": "alert_reason",
+              "fieldValue": "={{ $json.alert_reason }}"
+            },
+            {
+              "fieldId": "is_bot_handled",
+              "fieldValue": "={{ $json.is_bot_handled }}"
+            },
+            {
+              "fieldId": "language",
+              "fieldValue": "={{ $json.language }}"
+            },
+            {
+              "fieldId": "analyzed_at",
+              "fieldValue": "={{ $json.analyzed_at }}"
+            }
           ]
         }
       },
-      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
       "id": "b2c3d4e5-0002-0002-0002-000000000008",
       "name": "Write to Analysis Results",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [1640, 300]
+      "position": [
+        2128,
+        288
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "48UlSg2STuVckZm2",
+          "name": "Supabase account 2"
+        }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
-        "operation": "update",
-        "tableId": "raw_conversations",
-        "filters": {
-          "values": [
-            {"keyName": "conversation_id", "condition": "eq", "keyValue": "={{ $json.conversation_id }}"}
+        "method": "PATCH",
+        "url": "=https://mxhfmqhniphzgmbqkymh.supabase.co/rest/v1/{{ $json.is_bot_handled ? 'qa_bot_conversations' : 'qa_conversations' }}?conversation_id=eq.{{ $json.conversation_id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=minimal"
+            }
           ]
         },
-        "fieldsUi": {
-          "fieldValues": [
-            {"fieldId": "analysis_status", "fieldValue": "analyzed"},
-            {"fieldId": "language",        "fieldValue": "={{ $json.language }}"}
-          ]
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({analysis_status: 'done', language: $json.language}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
         }
       },
-      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
       "id": "c3d4e5f6-0002-0002-0002-mark-analyzed1",
       "name": "Mark Conversation Analyzed",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [1860, 300]
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2352,
+        288
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "48UlSg2STuVckZm2",
+          "name": "Supabase account 2"
+        }
+      }
     },
     {
       "parameters": {
         "conditions": {
-          "conditions": [
+          "boolean": [
             {
-              "id": "alert-check",
-              "leftValue": "={{ $json.is_alert }}",
-              "rightValue": true,
-              "operator": {"type": "boolean", "operation": "equals"}
+              "value1": "={{ $json.is_alert }}",
+              "value2": true
             }
-          ],
-          "combinator": "and"
+          ]
         }
       },
       "id": "b2c3d4e5-0002-0002-0002-000000000009",
       "name": "Check Alert Worthy",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [1860, 300]
+      "typeVersion": 1,
+      "position": [
+        2688,
+        288
+      ]
     },
     {
       "parameters": {
-        "source": "database",
-        "workflowId": {"__rl": true, "value": "={{ $env.WF5_WORKFLOW_ID }}", "mode": "expression"},
-        "options": {"waitForSubWorkflow": false}
+        "workflowId": "tUmfOY4cR5LmYKEP",
+        "options": {
+          "waitForSubWorkflow": false
+        }
       },
       "id": "b2c3d4e5-0002-0002-0002-000000000010",
       "name": "Trigger WF5 Alert",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1,
-      "position": [2080, 200]
+      "position": [
+        2912,
+        208
+      ]
     },
     {
       "parameters": {
-        "mode": "rules",
         "rules": {
-          "values": [
+          "rules": [
             {
-              "conditions": {
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.severity }}",
-                    "rightValue": "Low",
-                    "operator": {"type": "string", "operation": "notEquals"}
-                  }
-                ],
-                "combinator": "and"
-              },
-              "outputKey": "0",
-              "renameOutput": true,
-              "outputKeyName": "Create Ticket"
+              "operation": "notEqual",
+              "value2": "Low"
             },
             {
-              "conditions": {
-                "conditions": [
-                  {
-                    "leftValue": "={{ $json.severity }}",
-                    "rightValue": "Low",
-                    "operator": {"type": "string", "operation": "equals"}
-                  }
-                ],
-                "combinator": "and"
-              },
-              "outputKey": "1",
-              "renameOutput": true,
-              "outputKeyName": "Report Only"
+              "operation": "equal",
+              "value2": "Low"
             }
           ]
         },
-        "options": {"fallbackOutput": "extra"}
+        "fallbackOutput": 1
       },
       "id": "b2c3d4e5-0002-0002-0002-000000000011",
       "name": "Check Severity for Ticket",
       "type": "n8n-nodes-base.switch",
-      "typeVersion": 3,
-      "position": [2080, 400]
+      "typeVersion": 2,
+      "position": [
+        3136,
+        288
+      ]
     },
     {
       "parameters": {
-        "source": "database",
-        "workflowId": {"__rl": true, "value": "={{ $env.WF4_WORKFLOW_ID }}", "mode": "expression"},
-        "options": {"waitForSubWorkflow": false}
+        "workflowId": "7YUTTidycYycCit4",
+        "options": {
+          "waitForSubWorkflow": false
+        }
       },
       "id": "b2c3d4e5-0002-0002-0002-000000000012",
       "name": "Trigger WF4 Ticket",
       "type": "n8n-nodes-base.executeWorkflow",
       "typeVersion": 1,
-      "position": [2300, 350]
+      "position": [
+        3360,
+        448
+      ]
     },
     {
       "parameters": {},
@@ -326,45 +492,330 @@
       "name": "No Operation",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [2300, 500]
+      "position": [
+        3360,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "qa_bot_conversations",
+        "returnAll": true,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "analysis_status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        }
+      },
+      "id": "wf2-read-bot-convos-001",
+      "name": "Read Unanalyzed Bot Conversations",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        176,
+        832
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "48UlSg2STuVckZm2",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "wf2-merge-agent-bot-001",
+      "name": "Merge Agent and Bot",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        464,
+        816
+      ]
+    },
+    {
+      "id": "wf2-restore-analysis-001",
+      "name": "Restore Analysis Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2464,
+        288
+      ],
+      "parameters": {
+        "jsCode": "// Mark Conversation Analyzed returns HTTP response, losing analysis data.\n// Restore the full analysis record from Write to Analysis Results.\nreturn [{ json: $('Write to Analysis Results').item.json }];"
+      }
     }
   ],
   "connections": {
-    "Schedule Trigger": {"main": [[{"node": "Read Unanalyzed Conversations", "type": "main", "index": 0}]]},
-    "Read Unanalyzed Conversations": {"main": [[{"node": "Limit 500 Per Run", "type": "main", "index": 0}]]},
-    "Limit 500 Per Run": {"main": [[{"node": "Split In Batches", "type": "main", "index": 0}]]},
-    "Split In Batches": {"main": [[{"node": "Wait 500ms", "type": "main", "index": 0}]]},
-    "Wait 500ms": {"main": [[{"node": "Build Claude Request", "type": "main", "index": 0}]]},
-    "Build Claude Request": {"main": [[{"node": "Call Claude API", "type": "main", "index": 0}]]},
-    "Call Claude API": {"main": [[{"node": "Parse AI Response", "type": "main", "index": 0}]]},
-    "Parse AI Response": {"main": [[{"node": "Parse OK?", "type": "main", "index": 0}]]},
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Unanalyzed Conversations",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Unanalyzed Bot Conversations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit 500 Per Run": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Claude Request": {
+      "main": [
+        [
+          {
+            "node": "Wait 15s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Claude API": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Parse OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Parse OK?": {
       "main": [
-        [{"node": "Write to Analysis Results", "type": "main", "index": 0}],
-        [{"node": "Write Parse Error Row", "type": "main", "index": 0}]
+        [
+          {
+            "node": "Write to Analysis Results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Write Parse Error Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Write Parse Error Row": {"main": [[{"node": "Mark Conversation Error", "type": "main", "index": 0}]]},
-    "Mark Conversation Error": {"main": [[{"node": "Split In Batches", "type": "main", "index": 0}]]},
-    "Write to Analysis Results": {"main": [[{"node": "Mark Conversation Analyzed", "type": "main", "index": 0}]]},
-    "Mark Conversation Analyzed": {"main": [[{"node": "Check Alert Worthy", "type": "main", "index": 0}]]},
+    "Write Parse Error Row": {
+      "main": [
+        [
+          {
+            "node": "Mark Conversation Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Conversation Error": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write to Analysis Results": {
+      "main": [
+        [
+          {
+            "node": "Mark Conversation Analyzed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Check Alert Worthy": {
       "main": [
-        [{"node": "Trigger WF5 Alert", "type": "main", "index": 0}],
-        [{"node": "Check Severity for Ticket", "type": "main", "index": 0}]
+        [
+          {
+            "node": "Trigger WF5 Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Severity for Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Trigger WF5 Alert": {"main": [[{"node": "Check Severity for Ticket", "type": "main", "index": 0}]]},
+    "Trigger WF5 Alert": {
+      "main": [
+        [
+          {
+            "node": "Check Severity for Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Check Severity for Ticket": {
       "main": [
-        [{"node": "Trigger WF4 Ticket", "type": "main", "index": 0}],
-        [{"node": "No Operation", "type": "main", "index": 0}]
+        [
+          {
+            "node": "Trigger WF4 Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Trigger WF4 Ticket": {"main": [[{"node": "Split In Batches", "type": "main", "index": 0}]]},
-    "No Operation": {"main": [[{"node": "Split In Batches", "type": "main", "index": 0}]]}
+    "Trigger WF4 Ticket": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Operation": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Unanalyzed Conversations": {
+      "main": [
+        [
+          {
+            "node": "Merge Agent and Bot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Agent and Bot": {
+      "main": [
+        [
+          {
+            "node": "Limit 500 Per Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Unanalyzed Bot Conversations": {
+      "main": [
+        [
+          {
+            "node": "Merge Agent and Bot",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Build Claude Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 15s": {
+      "main": [
+        [
+          {
+            "node": "Call Claude API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Conversation Analyzed": {
+      "main": [
+        [
+          {
+            "node": "Restore Analysis Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restore Analysis Data": {
+      "main": [
+        [
+          {
+            "node": "Check Alert Worthy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
-  "active": false,
-  "settings": {"executionOrder": "v1"},
-  "id": "wf2-ai-analysis"
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
 }

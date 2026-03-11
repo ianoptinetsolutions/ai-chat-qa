@@ -22,7 +22,7 @@
     {
       "parameters": {
         "operation": "post",
-        "channel": "={{ $env.SLACK_CHANNEL_ALERTS }}",
+        "channel": "#critical-alerts",
         "text": "={{ $json.slack_text }}",
         "blocksUi": "={{ JSON.stringify($json.slack_blocks) }}",
         "otherOptions": {}
@@ -32,12 +32,17 @@
       "type": "n8n-nodes-base.slack",
       "typeVersion": 1,
       "position": [540, 300],
-      "credentials": {"slackApi": {"id": "slack_api", "name": "slack_api"}}
+      "credentials": {
+        "slackApi": {
+          "id": "slack_api",
+          "name": "slack_api"
+        }
+      }
     },
     {
       "parameters": {
         "operation": "send",
-        "sendTo": "={{ $env.STAKEHOLDERS_EMAIL }}",
+        "sendTo": "hannahporter1905@gmail.com",
         "subject": "={{ $json.gmail_subject }}",
         "message": "={{ $json.gmail_html }}",
         "options": {}
@@ -47,41 +52,54 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2.1,
       "position": [760, 300],
-      "credentials": {"gmailOAuth2": {"id": "gmail_oauth", "name": "gmail_oauth"}}
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmail_oauth",
+          "name": "gmail_oauth"
+        }
+      }
     },
     {
       "parameters": {
+        "resource": "row",
         "operation": "create",
-        "tableId": "alert_log",
+        "tableId": "qa_alerts",
+        "dataToSend": "defineBelow",
         "fieldsUi": {
           "fieldValues": [
-            {"fieldId": "alert_id", "fieldValue": "={{ $json.alert_id }}"},
-            {"fieldId": "date", "fieldValue": "={{ $json.date }}"},
-            {"fieldId": "conversation_id", "fieldValue": "={{ $json.conversation_id }}"},
-            {"fieldId": "player_id", "fieldValue": "={{ $json.player_id }}"},
-            {"fieldId": "alert_reason", "fieldValue": "={{ $json.alert_reason }}"},
-            {"fieldId": "severity", "fieldValue": "={{ $json.severity }}"},
-            {"fieldId": "notified_to", "fieldValue": "={{ $json.notified_to }}"},
-            {"fieldId": "responded", "fieldValue": "=false"},
-            {"fieldId": "response_time", "fieldValue": "="}
+            { "fieldId": "alert_id", "fieldValue": "={{ $('Format Alert').first().json.alert_id }}" },
+            { "fieldId": "date", "fieldValue": "={{ $('Format Alert').first().json.date }}" },
+            { "fieldId": "conversation_id", "fieldValue": "={{ $('Format Alert').first().json.conversation_id }}" },
+            { "fieldId": "player_id", "fieldValue": "={{ $('Format Alert').first().json.player_id }}" },
+            { "fieldId": "alert_reason", "fieldValue": "={{ $('Format Alert').first().json.alert_reason }}" },
+            { "fieldId": "severity", "fieldValue": "={{ $('Format Alert').first().json.severity }}" },
+            { "fieldId": "notified_to", "fieldValue": "={{ $('Format Alert').first().json.notified_to }}" },
+            { "fieldId": "responded", "fieldValue": "=false" },
+            { "fieldId": "response_time", "fieldValue": "" }
           ]
         }
       },
-      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
       "id": "f0a1b2c3-d4e5-4f6a-7b8c-9d0e1f2a3b4c",
       "name": "Log to Alert Log",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [980, 300]
+      "position": [980, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "48UlSg2STuVckZm2",
+          "name": "Supabase account 2"
+        }
+      }
     }
   ],
   "connections": {
-    "Execute Workflow Trigger": {"main": [[{"node": "Format Alert", "type": "main", "index": 0}]]},
-    "Format Alert": {"main": [[{"node": "Post to Slack Critical Alerts", "type": "main", "index": 0}]]},
-    "Post to Slack Critical Alerts": {"main": [[{"node": "Send Critical Gmail", "type": "main", "index": 0}]]},
-    "Send Critical Gmail": {"main": [[{"node": "Log to Alert Log", "type": "main", "index": 0}]]}
+    "Execute Workflow Trigger": { "main": [[{ "node": "Format Alert", "type": "main", "index": 0 }]] },
+    "Format Alert": { "main": [[{ "node": "Post to Slack Critical Alerts", "type": "main", "index": 0 }]] },
+    "Post to Slack Critical Alerts": { "main": [[{ "node": "Send Critical Gmail", "type": "main", "index": 0 }]] },
+    "Send Critical Gmail": { "main": [[{ "node": "Log to Alert Log", "type": "main", "index": 0 }]] }
   },
-  "active": false,
-  "settings": {"executionOrder": "v1"},
-  "id": "wf5-critical-alerts"
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  }
 }

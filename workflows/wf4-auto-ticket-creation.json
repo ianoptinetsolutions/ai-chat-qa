@@ -7,33 +7,28 @@
       "name": "Execute Workflow Trigger",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1,
-      "position": [100, 300]
+      "position": [112, 304]
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\nconst { randomUUID } = require('crypto');\nconst ticketId = randomUUID();\nconst now = new Date();\nconst severity = data.severity || 'Medium';\nconst issueCategory = data.issue_category || 'Other';\nconst playerId = data.player_id || 'unknown';\nconst agentName = data.agent_name || 'Unknown';\nconst ticketTitle = `[${severity.toUpperCase()}] ${issueCategory} \u2014 Player ${playerId}`;\nconst slackDmText = `*New QA Ticket: ${ticketTitle}*\\n\\n:id: *Ticket:* ${ticketId}\\n:bust_in_silhouette: *Agent:* ${agentName}\\n:warning: *Severity:* ${severity}\\n\\n*Summary:*\\n${data.summary || ''}\\n\\n*Recommended Action:*\\n${data.recommended_action || ''}\\n\\n*Conversation:* <${data.intercom_link || ''}|View in Intercom>\\n\\n_Please review and mark Agree/Disagree in the Tickets table._`;\nreturn [{ json: { ticket_id: ticketId, date: now.toISOString().split('T')[0], conversation_id: data.conversation_id || '', player_id: playerId, agent_name: agentName, severity, issue_category: issueCategory, summary: data.summary || '', key_quotes: data.key_quotes || '[]', recommended_action: data.recommended_action || '', assigned_to: '', status: 'Open', feedback: '', feedback_processed: false, intercom_link: data.intercom_link || '', created_at: now.toISOString(), _ticket_title: ticketTitle, _slack_dm_text: slackDmText, _severity: severity } }];"
+        "jsCode": "const data = $input.first().json;\nconst { randomUUID } = require('crypto');\nconst ticketId = randomUUID();\nconst now = new Date();\nconst severity = data.severity || 'Medium';\nconst issueCategory = data.issue_category || 'Other';\nconst playerId = data.player_id || 'unknown';\nconst agentName = data.agent_name || 'Unknown';\nconst ticketTitle = `[${severity.toUpperCase()}] ${issueCategory} — Player ${playerId}`;\nconst slackDmText = `*New QA Ticket: ${ticketTitle}*\\n\\n:id: *Ticket:* ${ticketId}\\n:bust_in_silhouette: *Agent:* ${agentName}\\n:warning: *Severity:* ${severity}\\n\\n*Summary:*\\n${data.summary || ''}\\n\\n*Recommended Action:*\\n${data.recommended_action || ''}\\n\\n*Conversation:* <${data.intercom_link || ''}|View in Intercom>\\n\\n_Please review and mark Agree/Disagree in the Tickets table._`;\nreturn [{ json: { ticket_id: ticketId, date: now.toISOString().split('T')[0], conversation_id: data.conversation_id || '', player_id: playerId, agent_name: agentName, severity, issue_category: issueCategory, summary: data.summary || '', key_quotes: data.key_quotes || '[]', recommended_action: data.recommended_action || '', assigned_to: '', status: 'Open', feedback: '', feedback_processed: false, intercom_link: data.intercom_link || '', created_at: now.toISOString(), _ticket_title: ticketTitle, _slack_dm_text: slackDmText, _severity: severity } }];"
       },
       "id": "d0e1f2a3-b4c5-4d6e-7f8a-9b0c1d2e3f4a",
       "name": "Build Ticket",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [320, 300]
+      "position": [320, 304]
     },
     {
       "parameters": {
-        "method": "GET",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/agent_team_mapping?agent_name=eq.{{ encodeURIComponent($json.agent_name) }}&select=agent_name,team_leader_name,team_leader_slack_id&limit=1",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {"name": "apikey", "value": "={{ $env.SUPABASE_API_KEY }}"},
-            {"name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_API_KEY }}"}
-          ]
-        },
+        "url": "=https://mxhfmqhniphzgmbqkymh.supabase.co/rest/v1/qa_agent_map?agent_name=eq.{{ encodeURIComponent($json.agent_name) }}&select=agent_name,team_leader_name,team_leader_slack_id&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
         "options": {
           "response": {
             "response": {
-              "fullResponse": true
+              "fullResponse": true,
+              "neverError": true
             }
           }
         }
@@ -42,7 +37,13 @@
       "name": "Lookup Team Leader",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [540, 300]
+      "position": [544, 304],
+      "credentials": {
+        "supabaseApi": {
+          "id": "48UlSg2STuVckZm2",
+          "name": "Supabase account 2"
+        }
+      }
     },
     {
       "parameters": {
@@ -52,45 +53,36 @@
       "name": "Extract Team Leader",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [760, 300]
+      "position": [768, 304]
     },
     {
       "parameters": {
         "conditions": {
-          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
           "conditions": [
             {
               "id": "f2a3b4c5-d6e7-4f8a-9b0c-1d2e3f4a5b6c",
               "leftValue": "={{ $json.team_leader_slack_id }}",
               "rightValue": "",
-              "operator": {"type": "string", "operation": "notEmpty"}
+              "operator": { "type": "string", "operation": "notEmpty" }
             }
           ],
           "combinator": "and"
-        }
+        },
+        "options": {}
       },
       "id": "a3b4c5d6-e7f8-4a9b-0c1d-2e3f4a5b6c7d",
       "name": "Check Mapping Found",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [980, 300]
+      "position": [992, 304]
     },
     {
       "parameters": {
         "assignments": {
           "assignments": [
-            {
-              "id": "b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d8e",
-              "name": "assigned_to",
-              "value": "={{ $json.team_leader_name }}",
-              "type": "string"
-            },
-            {
-              "id": "c5d6e7f8-a9b0-4c1d-2e3f-4a5b6c7d8e9f",
-              "name": "slack_id",
-              "value": "={{ $json.team_leader_slack_id }}",
-              "type": "string"
-            }
+            { "id": "b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d8e", "name": "assigned_to", "value": "={{ $json.team_leader_name }}", "type": "string" },
+            { "id": "c5d6e7f8-a9b0-4c1d-2e3f-4a5b6c7d8e9f", "name": "slack_id", "value": "={{ $json.team_leader_slack_id }}", "type": "string" }
           ]
         },
         "options": {}
@@ -99,24 +91,14 @@
       "name": "Set Assigned To (Leader)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.3,
-      "position": [1200, 200]
+      "position": [1200, 208]
     },
     {
       "parameters": {
         "assignments": {
           "assignments": [
-            {
-              "id": "e7f8a9b0-c1d2-4e3f-4a5b-6c7d8e9f0a1b",
-              "name": "assigned_to",
-              "value": "QA-Inbox",
-              "type": "string"
-            },
-            {
-              "id": "f8a9b0c1-d2e3-4f4a-5b6c-7d8e9f0a1b2c",
-              "name": "slack_id",
-              "value": "#chat-qa-inbox",
-              "type": "string"
-            }
+            { "id": "e7f8a9b0-c1d2-4e3f-4a5b-6c7d8e9f0a1b", "name": "assigned_to", "value": "QA-Inbox", "type": "string" },
+            { "id": "f8a9b0c1-d2e3-4f4a-5b6c-7d8e9f0a1b2c", "name": "slack_id", "value": "#chat-qa-inbox", "type": "string" }
           ]
         },
         "options": {}
@@ -129,35 +111,49 @@
     },
     {
       "parameters": {
-        "operation": "create",
-        "tableId": "tickets",
+        "tableId": "qa_tickets",
         "fieldsUi": {
           "fieldValues": [
-            {"fieldId": "ticket_id", "fieldValue": "={{ $('Build Ticket').item.json.ticket_id }}"},
-            {"fieldId": "date", "fieldValue": "={{ $('Build Ticket').item.json.date }}"},
-            {"fieldId": "conversation_id", "fieldValue": "={{ $('Build Ticket').item.json.conversation_id }}"},
-            {"fieldId": "player_id", "fieldValue": "={{ $('Build Ticket').item.json.player_id }}"},
-            {"fieldId": "agent_name", "fieldValue": "={{ $('Build Ticket').item.json.agent_name }}"},
-            {"fieldId": "severity", "fieldValue": "={{ $('Build Ticket').item.json.severity }}"},
-            {"fieldId": "issue_category", "fieldValue": "={{ $('Build Ticket').item.json.issue_category }}"},
-            {"fieldId": "summary", "fieldValue": "={{ $('Build Ticket').item.json.summary }}"},
-            {"fieldId": "key_quotes", "fieldValue": "={{ $('Build Ticket').item.json.key_quotes }}"},
-            {"fieldId": "recommended_action", "fieldValue": "={{ $('Build Ticket').item.json.recommended_action }}"},
-            {"fieldId": "assigned_to", "fieldValue": "={{ $json.assigned_to }}"},
-            {"fieldId": "status", "fieldValue": "={{ $('Build Ticket').item.json.status }}"},
-            {"fieldId": "feedback", "fieldValue": "={{ $('Build Ticket').item.json.feedback }}"},
-            {"fieldId": "feedback_processed", "fieldValue": "={{ $('Build Ticket').item.json.feedback_processed }}"},
-            {"fieldId": "intercom_link", "fieldValue": "={{ $('Build Ticket').item.json.intercom_link }}"},
-            {"fieldId": "created_at", "fieldValue": "={{ $('Build Ticket').item.json.created_at }}"}
+            { "fieldId": "ticket_id", "fieldValue": "={{ $('Build Ticket').item.json.ticket_id }}" },
+            { "fieldId": "date", "fieldValue": "={{ $('Build Ticket').item.json.date }}" },
+            { "fieldId": "conversation_id", "fieldValue": "={{ $('Build Ticket').item.json.conversation_id }}" },
+            { "fieldId": "player_id", "fieldValue": "={{ $('Build Ticket').item.json.player_id }}" },
+            { "fieldId": "agent_name", "fieldValue": "={{ $('Build Ticket').item.json.agent_name }}" },
+            { "fieldId": "severity", "fieldValue": "={{ $('Build Ticket').item.json.severity }}" },
+            { "fieldId": "issue_category", "fieldValue": "={{ $('Build Ticket').item.json.issue_category }}" },
+            { "fieldId": "summary", "fieldValue": "={{ $('Build Ticket').item.json.summary }}" },
+            { "fieldId": "key_quotes", "fieldValue": "={{ $('Build Ticket').item.json.key_quotes }}" },
+            { "fieldId": "recommended_action", "fieldValue": "={{ $('Build Ticket').item.json.recommended_action }}" },
+            { "fieldId": "assigned_to", "fieldValue": "={{ $json.assigned_to }}" },
+            { "fieldId": "status", "fieldValue": "Open" },
+            { "fieldId": "feedback" },
+            { "fieldId": "feedback_processed", "fieldValue": "=false" },
+            { "fieldId": "intercom_link", "fieldValue": "={{ $('Build Ticket').item.json.intercom_link }}" },
+            { "fieldId": "created_at", "fieldValue": "={{ $('Build Ticket').item.json.created_at }}" }
           ]
         }
       },
-      "credentials": {"supabaseApi": {"id": "supabase_api", "name": "Supabase"}},
       "id": "b0c1d2e3-f4a5-4b6c-7d8e-9f0a1b2c3d4e",
       "name": "Insert Ticket to Supabase",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [1420, 300]
+      "position": [1424, 304],
+      "credentials": {
+        "supabaseApi": {
+          "id": "48UlSg2STuVckZm2",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let slackId = '';\ntry { slackId = $('Set Assigned To (Leader)').item.json.slack_id || ''; } catch(e) {}\nif (!slackId) {\n  try { slackId = $('Set Assigned To (Fallback)').item.json.slack_id || ''; } catch(e) {}\n}\nreturn [{ json: { ...$input.first().json, slack_id: slackId } }];"
+      },
+      "id": "wf4-resolve-slack-id-001",
+      "name": "Resolve Slack ID",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1640, 304]
     },
     {
       "parameters": {
@@ -170,43 +166,54 @@
       "name": "Send Slack DM",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 1,
-      "position": [1640, 300],
-      "credentials": {"slackApi": {"id": "slack_api", "name": "slack_api"}}
+      "position": [1860, 304],
+      "credentials": {
+        "slackApi": {
+          "id": "hL15CNwvuUXEcOGh",
+          "name": "Slack"
+        }
+      }
     },
     {
       "parameters": {
         "conditions": {
-          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
           "conditions": [
             {
               "id": "d2e3f4a5-b6c7-4d8e-9f0a-1b2c3d4e5f6a",
               "leftValue": "={{ $('Build Ticket').item.json._severity }}",
               "rightValue": "Critical",
-              "operator": {"type": "string", "operation": "equals"}
+              "operator": { "type": "string", "operation": "equals" }
             }
           ],
           "combinator": "and"
-        }
+        },
+        "options": {}
       },
       "id": "e3f4a5b6-c7d8-4e9f-0a1b-2c3d4e5f6a7b",
       "name": "Check if Critical",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [1860, 300]
+      "position": [2080, 304]
     },
     {
       "parameters": {
-        "operation": "post",
-        "channel": "={{ $env.SLACK_CHANNEL_ESCALATIONS }}",
+        "channel": "#critical-escalations",
         "text": "=:rotating_light: *CRITICAL ESCALATION*: {{ $('Build Ticket').item.json._ticket_title }} | <{{ $('Build Ticket').item.json.intercom_link }}|View>",
-        "otherOptions": {}
+        "otherOptions": {},
+        "attachments": []
       },
       "id": "f4a5b6c7-d8e9-4f0a-1b2c-3d4e5f6a7b8c",
       "name": "Post to Critical Escalations",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 1,
-      "position": [2080, 200],
-      "credentials": {"slackApi": {"id": "slack_api", "name": "slack_api"}}
+      "position": [2300, 208],
+      "credentials": {
+        "slackApi": {
+          "id": "zk5vslqARgWkkGnf",
+          "name": "Slack account"
+        }
+      }
     },
     {
       "parameters": {},
@@ -214,32 +221,24 @@
       "name": "Done",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [2080, 400]
+      "position": [2300, 400]
     }
   ],
   "connections": {
-    "Execute Workflow Trigger": {"main": [[{"node": "Build Ticket", "type": "main", "index": 0}]]},
-    "Build Ticket": {"main": [[{"node": "Lookup Team Leader", "type": "main", "index": 0}]]},
-    "Lookup Team Leader": {"main": [[{"node": "Extract Team Leader", "type": "main", "index": 0}]]},
-    "Extract Team Leader": {"main": [[{"node": "Check Mapping Found", "type": "main", "index": 0}]]},
-    "Check Mapping Found": {
-      "main": [
-        [{"node": "Set Assigned To (Leader)", "type": "main", "index": 0}],
-        [{"node": "Set Assigned To (Fallback)", "type": "main", "index": 0}]
-      ]
-    },
-    "Set Assigned To (Leader)": {"main": [[{"node": "Insert Ticket to Supabase", "type": "main", "index": 0}]]},
-    "Set Assigned To (Fallback)": {"main": [[{"node": "Insert Ticket to Supabase", "type": "main", "index": 0}]]},
-    "Insert Ticket to Supabase": {"main": [[{"node": "Send Slack DM", "type": "main", "index": 0}]]},
-    "Send Slack DM": {"main": [[{"node": "Check if Critical", "type": "main", "index": 0}]]},
-    "Check if Critical": {
-      "main": [
-        [{"node": "Post to Critical Escalations", "type": "main", "index": 0}],
-        [{"node": "Done", "type": "main", "index": 0}]
-      ]
-    }
+    "Execute Workflow Trigger": { "main": [[{ "node": "Build Ticket", "type": "main", "index": 0 }]] },
+    "Build Ticket": { "main": [[{ "node": "Lookup Team Leader", "type": "main", "index": 0 }]] },
+    "Lookup Team Leader": { "main": [[{ "node": "Extract Team Leader", "type": "main", "index": 0 }]] },
+    "Extract Team Leader": { "main": [[{ "node": "Check Mapping Found", "type": "main", "index": 0 }]] },
+    "Check Mapping Found": { "main": [[{ "node": "Set Assigned To (Leader)", "type": "main", "index": 0 }], [{ "node": "Set Assigned To (Fallback)", "type": "main", "index": 0 }]] },
+    "Set Assigned To (Leader)": { "main": [[{ "node": "Insert Ticket to Supabase", "type": "main", "index": 0 }]] },
+    "Set Assigned To (Fallback)": { "main": [[{ "node": "Insert Ticket to Supabase", "type": "main", "index": 0 }]] },
+    "Insert Ticket to Supabase": { "main": [[{ "node": "Resolve Slack ID", "type": "main", "index": 0 }]] },
+    "Resolve Slack ID": { "main": [[{ "node": "Send Slack DM", "type": "main", "index": 0 }]] },
+    "Send Slack DM": { "main": [[{ "node": "Check if Critical", "type": "main", "index": 0 }]] },
+    "Check if Critical": { "main": [[{ "node": "Post to Critical Escalations", "type": "main", "index": 0 }], [{ "node": "Done", "type": "main", "index": 0 }]] }
   },
-  "active": false,
-  "settings": {"executionOrder": "v1"},
-  "id": "wf4-auto-ticket-creation"
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  }
 }
