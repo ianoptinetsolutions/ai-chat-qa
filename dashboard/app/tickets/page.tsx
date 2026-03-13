@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { mockAdapter } from '@/lib/data/mock-adapter'
+import { db } from '@/lib/data'
 import type { Ticket, TicketFilters, FeedbackValue } from '@/lib/data/types'
 import { severityBadgeClass, statusBadgeClass, formatDateTime, truncate } from '@/lib/utils'
 import { ExternalLink, CheckCircle, XCircle, Clock } from 'lucide-react'
@@ -15,7 +15,7 @@ export default function TicketsPage() {
   const [feedback, setFeedback] = useState<Record<string, FeedbackValue>>({})
 
   useEffect(() => {
-    mockAdapter.getTickets(filters).then(data => {
+    db.getTickets(filters).then(data => {
       setTickets(data)
       const init: Record<string, FeedbackValue> = {}
       data.forEach(t => { init[t.ticket_id] = t.feedback })
@@ -26,7 +26,7 @@ export default function TicketsPage() {
 
   async function handleFeedback(ticketId: string, value: FeedbackValue) {
     setFeedback(f => ({ ...f, [ticketId]: value }))
-    await mockAdapter.updateTicketFeedback(ticketId, value)
+    await db.updateTicketFeedback(ticketId, value)
   }
 
   const setFilter = (key: keyof TicketFilters, value: string) => {

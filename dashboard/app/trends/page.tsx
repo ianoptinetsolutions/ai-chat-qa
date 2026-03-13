@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { mockAdapter } from '@/lib/data/mock-adapter'
+import { db } from '@/lib/data'
 import type { TrendData } from '@/lib/data/types'
 import { scoreColor } from '@/lib/utils'
 import {
@@ -44,7 +44,7 @@ export default function TrendsPage() {
   const [data, setData] = useState<TrendData | null>(null)
 
   useEffect(() => {
-    mockAdapter.getTrends().then(setData)
+    db.getTrends().then(setData)
   }, [])
 
   if (!data) return (

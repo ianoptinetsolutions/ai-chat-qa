@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { mockAdapter } from '@/lib/data/mock-adapter'
+import { db } from '@/lib/data'
 import type { AnalysisResult, ConversationFilters, Severity, IssueCategory, ResolutionStatus } from '@/lib/data/types'
 import { severityBadgeClass, resolutionBadgeClass, formatDateTime, truncate, scoreColor } from '@/lib/utils'
 import { X, ExternalLink, ChevronDown, Star } from 'lucide-react'
@@ -156,7 +156,7 @@ export default function ConversationsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    mockAdapter.getConversations(filters).then(data => {
+    db.getConversations(filters).then(data => {
       setConversations(data)
       setLoading(false)
     })

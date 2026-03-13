@@ -38,8 +38,11 @@ try {
     lines.push(`[${ts}] PLAYER: ${cleanBody || '[Image attached]'}`);
   }
 
-  // Read bot-handled flag set by wf1-filter-conversations
-  const isBotHandled = convo._is_bot_handled === true;
+  // Detect bot-handling from full conversation parts (reliable after Get Full Conversation).
+  // _is_bot_handled from Tag All Conversations is lost when Get Full Conversation fetches fresh Intercom data.
+  const allParts = convo.conversation_parts?.conversation_parts || [];
+  const hasHumanReply = allParts.some(p => p.author?.type === 'admin' || p.author?.type === 'team');
+  const isBotHandled = !hasHumanReply;
 
   // Find first human agent name for the whole conversation
   let agentName = 'Unknown';

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { mockAdapter } from '@/lib/data/mock-adapter'
+import { db } from '@/lib/data'
 import type { MonthlyReport } from '@/lib/data/types'
 import { formatDateTime } from '@/lib/utils'
 import { CheckCircle, Clock, Eye, Download, FileText, X } from 'lucide-react'
@@ -70,14 +70,14 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    mockAdapter.getReports().then(data => {
+    db.getReports().then(data => {
       setReports(data)
       setLoading(false)
     })
   }, [])
 
   async function handleApprove(month: string) {
-    await mockAdapter.approveReport(month)
+    await db.approveReport(month)
     setReports(rs => rs.map(r => r.month === month ? { ...r, status: 'approved' } : r))
     if (preview?.month === month) setPreview(p => p ? { ...p, status: 'approved' } : null)
   }

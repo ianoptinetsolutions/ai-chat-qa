@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { mockAdapter } from '@/lib/data/mock-adapter'
+import { db } from '@/lib/data'
 import type { AccuracyLog } from '@/lib/data/types'
 import { formatDate } from '@/lib/utils'
 import {
@@ -64,7 +64,7 @@ export default function AccuracyPage() {
   const [logs, setLogs] = useState<AccuracyLog[]>([])
 
   useEffect(() => {
-    mockAdapter.getAccuracyMetrics().then(setLogs)
+    db.getAccuracyMetrics().then(setLogs)
   }, [])
 
   if (!logs.length) return (

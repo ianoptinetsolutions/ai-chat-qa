@@ -38,8 +38,8 @@
       "parameters": {
         "operation": "send",
         "sendTo": "={{ $env.STAKEHOLDERS_EMAIL }}",
-        "subject": "={{ $json.gmail_subject }}",
-        "message": "={{ $json.gmail_html }}",
+        "subject": "={{ $('Format Alert').item.json.gmail_subject }}",
+        "message": "={{ $('Format Alert').item.json.gmail_html }}",
         "options": {}
       },
       "id": "e9f0a1b2-c3d4-4e5f-6a7b-8c9d0e1f2a3b",
@@ -55,13 +55,13 @@
         "tableId": "alert_log",
         "fieldsUi": {
           "fieldValues": [
-            {"fieldId": "alert_id", "fieldValue": "={{ $json.alert_id }}"},
-            {"fieldId": "date", "fieldValue": "={{ $json.date }}"},
-            {"fieldId": "conversation_id", "fieldValue": "={{ $json.conversation_id }}"},
-            {"fieldId": "player_id", "fieldValue": "={{ $json.player_id }}"},
-            {"fieldId": "alert_reason", "fieldValue": "={{ $json.alert_reason }}"},
-            {"fieldId": "severity", "fieldValue": "={{ $json.severity }}"},
-            {"fieldId": "notified_to", "fieldValue": "={{ $json.notified_to }}"},
+            {"fieldId": "alert_id", "fieldValue": "={{ $('Format Alert').item.json.alert_id }}"},
+            {"fieldId": "date", "fieldValue": "={{ $('Format Alert').item.json.date }}"},
+            {"fieldId": "conversation_id", "fieldValue": "={{ $('Format Alert').item.json.conversation_id }}"},
+            {"fieldId": "player_id", "fieldValue": "={{ $('Format Alert').item.json.player_id }}"},
+            {"fieldId": "alert_reason", "fieldValue": "={{ $('Format Alert').item.json.alert_reason }}"},
+            {"fieldId": "severity", "fieldValue": "={{ $('Format Alert').item.json.severity }}"},
+            {"fieldId": "notified_to", "fieldValue": "={{ $('Format Alert').item.json.notified_to }}"},
             {"fieldId": "responded", "fieldValue": "=false"},
             {"fieldId": "response_time", "fieldValue": "="}
           ]
