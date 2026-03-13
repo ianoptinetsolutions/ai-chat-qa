@@ -127,7 +127,7 @@ export default function ReportsPage() {
               const isDraft = r.status === 'draft'
               return (
                 <div key={r.month} className="card" style={{ padding: '20px 24px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px', alignItems: 'center' }}>
+                  <div className="report-card-layout" style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                       <div style={{
                         width: 44, height: 44,

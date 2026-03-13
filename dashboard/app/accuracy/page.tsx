@@ -34,8 +34,8 @@ function AccuracyGauge({ pct }: { pct: number }) {
   const color = pct >= 85 ? 'var(--green)' : pct >= 70 ? 'var(--medium)' : 'var(--critical)'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-      <svg width="140" height="110" viewBox="0 0 140 110">
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', width: '100%' }}>
+      <svg viewBox="0 0 140 110" style={{ width: '100%', maxWidth: '140px', height: 'auto' }}>
         <circle cx="70" cy="80" r={r} fill="none" stroke="var(--border)" strokeWidth="10"
           strokeDasharray={`${circ * 0.75} ${circ * 0.25}`}
           strokeDashoffset={circ * 0.125}
@@ -68,9 +68,19 @@ export default function AccuracyPage() {
   }, [])
 
   if (!logs.length) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', color: 'var(--text-muted)', fontFamily: "'IBM Plex Mono', monospace" }}>
-      Loading accuracy data…
-    </div>
+    <>
+      <div className="page-header">
+        <div>
+          <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Accuracy</h1>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+            AI analysis accuracy · Based on team feedback
+          </div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '50vh', color: 'var(--text-muted)', fontFamily: "'IBM Plex Mono', monospace" }}>
+        Loading accuracy data…
+      </div>
+    </>
   )
 
   // Only use global rows (language='all' or no language) for summary stats and trend chart
@@ -139,7 +149,7 @@ export default function AccuracyPage() {
 
       <div className="page-content fade-up">
         {/* Top row: gauge + stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr 1fr 1fr', gap: '16px', marginBottom: '24px', alignItems: 'stretch' }}>
+        <div className="accuracy-top-grid" style={{ display: 'grid', gridTemplateColumns: 'auto 1fr 1fr 1fr', gap: '16px', marginBottom: '24px', alignItems: 'stretch' }}>
           {/* Gauge */}
           <div className="card" style={{ padding: '20px 28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <AccuracyGauge pct={overallAcc} />
@@ -164,7 +174,7 @@ export default function AccuracyPage() {
           ))}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '20px', marginBottom: '20px' }}>
+        <div className="chart-split-grid" style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '20px', marginBottom: '20px' }}>
           {/* Accuracy trend */}
           <div className="card" style={{ padding: '22px 24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
@@ -233,7 +243,7 @@ export default function AccuracyPage() {
           <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: '14px' }}>
             Accuracy Log
           </div>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-scroll-hint" style={{ overflowX: 'auto' }}>
             <table className="data-table">
               <thead>
                 <tr>

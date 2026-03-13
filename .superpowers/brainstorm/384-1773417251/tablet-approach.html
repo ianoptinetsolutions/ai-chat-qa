@@ -1,0 +1,97 @@
+<h2>How should the dashboard behave on tablet?</h2>
+<p class="subtitle">Mobile (< 768px) will always use a bottom nav bar. Choose how tablet (768px–1279px) behaves.</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Icon-only sidebar on tablet</h3>
+      <p>The sidebar collapses to a slim 60px rail showing just icons. Hover/tap reveals labels as tooltips. Full 220px sidebar on desktop (1280px+).</p>
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:stretch;height:90px;border-radius:6px;overflow:hidden;border:1px solid #2a3347">
+        <div style="width:44px;background:#0d1018;display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:10px;flex-shrink:0">
+          <div style="width:20px;height:20px;background:#f59e0b;border-radius:4px;opacity:0.9"></div>
+          <div style="width:16px;height:16px;background:#3d4d63;border-radius:3px"></div>
+          <div style="width:16px;height:16px;background:#3d4d63;border-radius:3px"></div>
+          <div style="width:16px;height:16px;background:#3d4d63;border-radius:3px"></div>
+        </div>
+        <div style="flex:1;background:#07090e;padding:8px;display:flex;flex-direction:column;gap:6px">
+          <div style="height:14px;background:#131720;border-radius:3px;width:60%"></div>
+          <div style="height:10px;background:#131720;border-radius:3px;width:80%"></div>
+          <div style="height:10px;background:#131720;border-radius:3px;width:50%"></div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top:10px">
+        <div class="pros"><h4>Pros</h4><ul><li>Always visible nav</li><li>Efficient use of space</li><li>Familiar desktop pattern</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Icons alone may confuse</li><li>Less touch-friendly</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Hamburger menu on tablet</h3>
+      <p>Top bar with hamburger icon. Tapping slides in a full-width overlay sidebar. Nav hidden until opened. Full sidebar on desktop (1280px+).</p>
+      <div style="margin-top:12px;border-radius:6px;overflow:hidden;border:1px solid #2a3347;height:90px">
+        <div style="background:#0d1018;height:28px;display:flex;align-items:center;padding:0 10px;gap:8px;border-bottom:1px solid #2a3347">
+          <div style="display:flex;flex-direction:column;gap:3px;cursor:pointer">
+            <div style="width:14px;height:2px;background:#e4eaf6;border-radius:1px"></div>
+            <div style="width:14px;height:2px;background:#e4eaf6;border-radius:1px"></div>
+            <div style="width:14px;height:2px;background:#e4eaf6;border-radius:1px"></div>
+          </div>
+          <span style="font-size:10px;font-weight:700;color:#f59e0b;letter-spacing:0.5px">CHAT QA</span>
+        </div>
+        <div style="background:#07090e;padding:8px;display:flex;flex-direction:column;gap:5px">
+          <div style="height:12px;background:#131720;border-radius:3px;width:55%"></div>
+          <div style="height:10px;background:#131720;border-radius:3px;width:70%"></div>
+          <div style="height:10px;background:#131720;border-radius:3px;width:45%"></div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top:10px">
+        <div class="pros"><h4>Pros</h4><ul><li>Maximum content space</li><li>Touch-friendly when open</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Hidden nav (discoverability)</li><li>Extra tap required</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Bottom nav on tablet too</h3>
+      <p>Use the same bottom nav bar as mobile on both mobile and tablet (up to 1279px). Full sidebar only on large desktop.</p>
+      <div style="margin-top:12px;border-radius:6px;overflow:hidden;border:1px solid #2a3347;height:90px;position:relative">
+        <div style="background:#07090e;height:62px;padding:8px;display:flex;flex-direction:column;gap:5px">
+          <div style="height:12px;background:#131720;border-radius:3px;width:55%"></div>
+          <div style="height:10px;background:#131720;border-radius:3px;width:70%"></div>
+          <div style="height:10px;background:#131720;border-radius:3px;width:45%"></div>
+        </div>
+        <div style="background:#0d1018;height:28px;display:flex;align-items:center;justify-content:space-around;border-top:1px solid #2a3347">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <div style="width:12px;height:12px;background:#f59e0b;border-radius:2px"></div>
+            <div style="width:18px;height:4px;background:#3d4d63;border-radius:1px"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <div style="width:12px;height:12px;background:#3d4d63;border-radius:2px"></div>
+            <div style="width:18px;height:4px;background:#3d4d63;border-radius:1px"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <div style="width:12px;height:12px;background:#3d4d63;border-radius:2px"></div>
+            <div style="width:18px;height:4px;background:#3d4d63;border-radius:1px"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <div style="width:12px;height:12px;background:#3d4d63;border-radius:2px"></div>
+            <div style="width:18px;height:4px;background:#3d4d63;border-radius:1px"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <div style="width:12px;height:12px;background:#3d4d63;border-radius:2px"></div>
+            <div style="width:18px;height:4px;background:#3d4d63;border-radius:1px"></div>
+          </div>
+        </div>
+      </div>
+      <div class="pros-cons" style="margin-top:10px">
+        <div class="pros"><h4>Pros</h4><ul><li>Consistent mobile + tablet UX</li><li>Modern app feel</li><li>Touch-optimized</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Less space-efficient on wider tablets</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

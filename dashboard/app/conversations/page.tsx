@@ -179,7 +179,7 @@ export default function ConversationsPage() {
 
       <div className="page-content">
         {/* Filters */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div className="filter-bar" style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
           <select value={filters.severity ?? ''} onChange={e => setFilter('severity', e.target.value)} style={{ minWidth: '120px' }}>
             <option value="">All Severities</option>
             {['Critical', 'High', 'Medium', 'Low'].map(s => <option key={s} value={s}>{s}</option>)}
@@ -211,7 +211,7 @@ export default function ConversationsPage() {
 
         {/* Table */}
         <div className="card" style={{ overflow: 'hidden' }}>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-scroll-hint" style={{ overflowX: 'auto' }}>
             <table className="data-table">
               <thead>
                 <tr>

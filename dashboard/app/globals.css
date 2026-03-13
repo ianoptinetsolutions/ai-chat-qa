@@ -25,11 +25,17 @@
   --green: #10b981;
   --green-dim: rgba(16,185,129,0.13);
   --sidebar-w: 220px;
+  --topbar-h: 52px;
+  --bottomnav-h: 64px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
 
 body {
   background: var(--bg-base);
@@ -37,6 +43,7 @@ body {
   font-family: 'DM Sans', sans-serif;
   font-size: 14px;
   line-height: 1.5;
+  overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5 {
@@ -55,7 +62,7 @@ h1, h2, h3, h4, h5 {
 /* Layout */
 .app-layout {
   display: flex;
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .sidebar {
@@ -74,7 +81,8 @@ h1, h2, h3, h4, h5 {
 .main-content {
   margin-left: var(--sidebar-w);
   flex: 1;
-  min-height: 100vh;
+  min-width: 0;        /* prevent flex item from exceeding viewport width */
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -357,3 +365,283 @@ select option { background: var(--bg-elevated); }
 
 /* Divider */
 .divider { height: 1px; background: var(--border); margin: 0; }
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE — Mobile & Tablet
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Top Bar (mobile + tablet only, hidden on desktop) ───── */
+.top-bar {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--topbar-h);
+  background: rgba(13, 16, 24, 0.92);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 42;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+.top-bar__logo { display: flex; align-items: center; gap: 10px; }
+.top-bar__logo-icon {
+  width: 28px; height: 28px;
+  background: var(--accent); border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.top-bar__logo-text {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700; font-size: 15px;
+  color: var(--text-primary); letter-spacing: -0.02em;
+}
+.top-bar__status { display: flex; align-items: center; gap: 7px; }
+.top-bar__pulse {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green); box-shadow: 0 0 6px var(--green);
+  flex-shrink: 0;
+}
+.top-bar__status-text {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; color: var(--text-muted);
+}
+
+/* ── Bottom Nav (mobile + tablet only, hidden on desktop) ── */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: calc(var(--bottomnav-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: rgba(13, 16, 24, 0.92);
+  border-top: 1px solid var(--border-bright);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 50;
+  align-items: center;
+  justify-content: space-around;
+}
+.bottom-nav-item {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px; flex: 1;
+  height: var(--bottomnav-h);
+  color: var(--text-muted);
+  text-decoration: none;
+  position: relative;
+  transition: color 120ms ease;
+}
+.bottom-nav-item:hover { color: var(--text-secondary); }
+.bottom-nav-item__label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; letter-spacing: 0.06em;
+  text-transform: uppercase; line-height: 1;
+}
+.bottom-nav-item--active { color: var(--accent); }
+.bottom-nav-item--active::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 20%; right: 20%;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.6), 0 0 16px rgba(245, 158, 11, 0.2);
+  animation: nav-indicator-in 120ms ease forwards;
+}
+@keyframes nav-indicator-in {
+  from { opacity: 0; transform: scaleX(0.4); }
+  to   { opacity: 1; transform: scaleX(1); }
+}
+
+/* ── Breakpoint: tablet + mobile (< 1280px) ─────────────── */
+@media (max-width: 1279px) {
+  :root {
+    --topbar-h: 52px;
+    --bottomnav-h: 64px;
+  }
+
+  /* Show mobile chrome, hide desktop sidebar */
+  .top-bar    { display: flex; }
+  .bottom-nav { display: flex; }
+  .sidebar    { display: none !important; }
+
+  /* Remove sidebar offset; add space for top + bottom bars */
+  .main-content {
+    margin-left: 0 !important;
+    min-height: unset !important;
+    padding-top: var(--topbar-h);
+    padding-bottom: calc(var(--bottomnav-h) + env(safe-area-inset-bottom));
+  }
+
+  /* Page header: sticky just below the top bar; wrap on narrow viewports */
+  .page-header {
+    top: var(--topbar-h);
+    padding: 14px 20px;
+    z-index: 38;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .page-content { padding: 20px; }
+
+  /* Page header: prevent right-side items from wrapping on tablet */
+  .page-header { flex-wrap: nowrap; }
+  .page-header > * { min-width: 0; }
+
+  /* Drawer: narrower on tablet */
+  .drawer { width: 400px; }
+
+  /* Modal: constrain on tablet */
+  .modal { width: 92vw; max-width: 92vw; }
+
+  /* Chart split grids collapse to single column */
+  .chart-split-grid    { grid-template-columns: 1fr !important; }
+  .accuracy-top-grid   { grid-template-columns: 1fr 1fr !important; }
+}
+
+/* ── Breakpoint: mobile only (< 768px) ──────────────────── */
+@media (max-width: 767px) {
+  /* Note: do NOT set overflow-x on .main-content here — it creates a scroll
+     container that breaks position:sticky on .page-header (sticky top becomes
+     relative to the padded container edge, adding a double topbar-height gap).
+     html/body already have overflow-x: hidden for horizontal clip. */
+
+  .page-content { padding: 16px; }
+  .page-header  { padding: 10px 16px; flex-wrap: nowrap; gap: 8px; align-items: center; }
+  .page-header > * { min-width: 0; }
+  /* Truncate the subtitle line (date / record count) so it never forces a wrap */
+  .page-header > div:first-child > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Drawer: full screen on mobile */
+  .drawer {
+    width: 100vw;
+    border-left: none;
+    border-top: 1px solid var(--border-bright);
+  }
+
+  /* Modal: sheet from bottom on mobile */
+  .modal-overlay { align-items: flex-end; }
+  .modal {
+    width: 100vw;
+    max-width: 100vw;
+    max-height: 92vh;
+    border-radius: 16px 16px 0 0;
+  }
+
+  /* Stat cards: smaller padding on mobile */
+  .stat-card { padding: 16px 18px; }
+  .stat-value { font-size: 26px; }
+
+  /* Tables: enforce min-width so horizontal scroll works */
+  .data-table { min-width: 600px; }
+
+  /* Table scroll container: right-edge fade hints at more content */
+  .table-scroll-hint { position: relative; }
+  .table-scroll-hint::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 40px;
+    background: linear-gradient(to right, transparent, var(--bg-surface));
+    pointer-events: none;
+    border-radius: 0 10px 10px 0;
+  }
+
+  /* Buttons: slightly smaller on mobile */
+  .btn-ghost,
+  .btn-primary { font-size: 12px; padding: 6px 12px; }
+
+  /* Overview stat grid: 2 columns on mobile */
+  .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Accuracy top grid: gauge spans full width, 2-col stats below */
+  .accuracy-top-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .accuracy-top-grid > :first-child { grid-column: 1 / -1; }
+  .accuracy-top-grid > * { min-width: 0; }
+
+  /* Overview: 2-col chart cards → 1-col on mobile */
+  .overview-charts-grid { grid-template-columns: 1fr !important; }
+
+  /* Trends: anomaly alert grid → 1-col on mobile */
+  .anomaly-grid { grid-template-columns: 1fr !important; }
+
+  /* Trends: 3-col summary stats → 1-col on mobile */
+  .trends-stats-grid { grid-template-columns: 1fr !important; }
+
+  /* Reports: 1fr/auto card row → stack on mobile */
+  .report-card-layout { grid-template-columns: 1fr !important; }
+  .report-card-layout > :last-child { justify-content: flex-start; }
+
+  /* ── Filter bars: reliable 2-column CSS grid layout ─────── */
+  .filter-bar {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    align-items: start;
+  }
+  .filter-bar select,
+  .filter-bar input {
+    min-width: 0 !important;
+    width: 100%;
+  }
+  /* "Clear filters" button spans both columns */
+  .filter-bar .btn-ghost { grid-column: 1 / -1; }
+
+  /* ── Ticket summary chips: 2-column CSS grid layout ─────── */
+  .summary-chips {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+  .summary-chips > * { min-width: 0; }
+}
+
+/* ── Next.js Devtools Indicator ─────────────────────────── */
+/* Desktop: anchor inside sidebar footer area               */
+[data-next-badge-root] {
+  position: fixed !important;
+  left: 0 !important;
+  right: auto !important;
+  bottom: 0 !important;
+  width: var(--sidebar-w) !important;
+  height: 52px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  padding: 0 18px !important;
+  border-top: 1px solid var(--border) !important;
+  background: var(--bg-surface) !important;
+  z-index: 51 !important;
+  transform: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+/* Mobile / tablet: compact floating button — bottom-right, above nav */
+@media (max-width: 1279px) {
+  [data-next-badge-root] {
+    left: auto !important;
+    right: 14px !important;
+    width: auto !important;
+    height: auto !important;
+    bottom: calc(var(--bottomnav-h) + env(safe-area-inset-bottom) + 12px) !important;
+    transform: none !important;
+    padding: 6px 10px !important;
+    border: 1px solid var(--border-bright) !important;
+    border-top: 1px solid var(--border-bright) !important;
+    border-radius: 12px !important;
+    background: rgba(13, 16, 24, 0.92) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255,255,255,0.05) inset !important;
+    justify-content: center !important;
+    z-index: 49 !important;
+    opacity: 0.75 !important;
+    transition: opacity 0.2s ease !important;
+  }
+  [data-next-badge-root]:hover {
+    opacity: 1 !important;
+  }
+}

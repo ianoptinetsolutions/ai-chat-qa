@@ -48,9 +48,19 @@ export default function TrendsPage() {
   }, [])
 
   if (!data) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', color: 'var(--text-muted)', fontFamily: "'IBM Plex Mono', monospace" }}>
-      Loading trends…
-    </div>
+    <>
+      <div className="page-header">
+        <div>
+          <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Trends</h1>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+            7-day rolling window · Pattern detection
+          </div>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '50vh', color: 'var(--text-muted)', fontFamily: "'IBM Plex Mono', monospace" }}>
+        Loading trends…
+      </div>
+    </>
   )
 
   const chartData = data.daily_series.map(d => ({
@@ -80,7 +90,7 @@ export default function TrendsPage() {
       <div className="page-content fade-up">
         {/* Anomaly alerts */}
         {data.anomalies.length > 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(data.anomalies.length, 3)}, 1fr)`, gap: '12px', marginBottom: '24px' }}>
+          <div className="anomaly-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(data.anomalies.length, 3)}, 1fr)`, gap: '12px', marginBottom: '24px' }}>
             {data.anomalies.map((a) => (
               <div key={a.category} style={{
                 background: 'var(--critical-dim)', border: '1px solid rgba(244,63,94,0.25)',
@@ -102,7 +112,7 @@ export default function TrendsPage() {
         )}
 
         {/* Summary stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
+        <div className="trends-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
           <div className="stat-card">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
               <TrendingUp size={14} color="var(--accent)" />
@@ -145,7 +155,7 @@ export default function TrendsPage() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '20px', marginBottom: '20px' }}>
+        <div className="chart-split-grid" style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: '20px', marginBottom: '20px' }}>
           {/* Severity trend line chart */}
           <div className="card" style={{ padding: '22px 24px' }}>
             <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: '14px', marginBottom: '20px' }}>
@@ -173,7 +183,7 @@ export default function TrendsPage() {
               <BarChart data={data.category_breakdown.slice(0, 6)} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
                 <XAxis type="number" tick={{ fill: 'var(--text-muted)', fontSize: 9, fontFamily: 'IBM Plex Mono' }} tickLine={false} axisLine={false} />
-                <YAxis dataKey="category" type="category" tick={{ fill: 'var(--text-secondary)', fontSize: 9, fontFamily: 'IBM Plex Mono' }} tickLine={false} axisLine={false} width={120} />
+                <YAxis dataKey="category" type="category" tick={{ fill: 'var(--text-secondary)', fontSize: 9, fontFamily: 'IBM Plex Mono' }} tickLine={false} axisLine={false} width={90} />
                 <Tooltip content={<CustomTooltip />} />
                 <Bar dataKey="count" fill="var(--accent)" radius={[0, 4, 4, 0]} opacity={0.85} />
               </BarChart>
@@ -188,7 +198,7 @@ export default function TrendsPage() {
               Agent Performance
             </span>
           </div>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-scroll-hint" style={{ overflowX: 'auto' }}>
             <table className="data-table">
               <thead>
                 <tr>

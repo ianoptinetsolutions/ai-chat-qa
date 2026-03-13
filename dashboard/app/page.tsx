@@ -67,7 +67,7 @@ export default async function OverviewPage() {
 
       <div className="page-content fade-up">
         {/* Top stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+        <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
           <StatCard label="Conversations Today" value={totalToday} sub="Last run: 06:00 UTC" />
           <StatCard
             label="Open Tickets"
@@ -89,7 +89,7 @@ export default async function OverviewPage() {
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+        <div className="overview-charts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
           {/* Severity breakdown */}
           <div className="card" style={{ padding: '22px 24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px' }}>

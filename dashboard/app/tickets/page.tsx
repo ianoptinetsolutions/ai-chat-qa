@@ -49,7 +49,7 @@ export default function TicketsPage() {
 
       <div className="page-content">
         {/* Summary chips */}
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <div className="summary-chips" style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
           {[
             { label: 'Open', count: open, color: 'var(--critical)' },
             { label: 'In Review', count: tickets.filter(t => t.status === 'In Review').length, color: 'var(--medium)' },
@@ -72,7 +72,7 @@ export default function TicketsPage() {
         </div>
 
         {/* Filters */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <div className="filter-bar" style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
           <select value={filters.severity ?? ''} onChange={e => setFilter('severity', e.target.value)} style={{ minWidth: '130px' }}>
             <option value="">All Severities</option>
             {['Critical', 'High', 'Medium'].map(s => <option key={s} value={s}>{s}</option>)}
@@ -92,7 +92,7 @@ export default function TicketsPage() {
 
         {/* Table */}
         <div className="card" style={{ overflow: 'hidden' }}>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-scroll-hint" style={{ overflowX: 'auto' }}>
             <table className="data-table">
               <thead>
                 <tr>
@@ -165,7 +165,7 @@ export default function TicketsPage() {
         </div>
 
         {/* Legend */}
-        <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+        <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-muted)' }}>
             <Clock size={11} />
             Feedback is sent to AI accuracy tracking (WF7, runs every 6h)
