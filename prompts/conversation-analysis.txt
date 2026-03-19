@@ -33,6 +33,8 @@ ISSUE CATEGORIES (issue_category — pick exactly one):
 - "Login/Account"
 - "Bonus/Promotion"
 - "Technical Error"
+- "Website & Navigation"
+- "Device & Compatibility"
 - "Slow Response"
 - "Inappropriate Communication"
 - "Other"
@@ -67,7 +69,7 @@ RESPOND WITH THIS EXACT JSON STRUCTURE — all fields required:
   "language": "ISO 639-1 code of the conversation language (ar | de | el | en | fi | fr | it | no | pt)",
   "summary": "1-3 sentence factual summary of what happened in this conversation",
   "dissatisfaction_severity": "Low | Medium | High | Critical",
-  "issue_category": "one of the 8 categories above",
+  "issue_category": "one of the 10 categories above",
   "resolution_status": "Resolved | Unresolved | Partially Resolved",
   "key_quotes": ["direct player quote 1", "direct player quote 2"],
   "agent_performance_score": null,

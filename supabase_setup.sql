@@ -274,6 +274,92 @@ ALTER TABLE qa_accuracy
 
 
 -- ================================================================
+--  MIGRATION — Extended Intercom fields (2026-03-19)
+--  Adds 35 new columns to qa_conversations and qa_bot_conversations
+--  to mirror all fields from the client's Intercom CSV export.
+--  Safe to run multiple times (ADD COLUMN IF NOT EXISTS).
+--
+--  RUN THIS IN: Supabase → SQL Editor → New Query
+-- ================================================================
+
+ALTER TABLE qa_conversations
+  ADD COLUMN IF NOT EXISTS channel TEXT,                               -- source.type (chat/email/etc)
+  ADD COLUMN IF NOT EXISTS source_url TEXT,                            -- source.url (page where chat started)
+  ADD COLUMN IF NOT EXISTS initiator_type TEXT,                        -- source.author.type (user/lead/admin)
+  ADD COLUMN IF NOT EXISTS started_by TEXT,                            -- source.author.name or type
+  ADD COLUMN IF NOT EXISTS team_assigned TEXT,                         -- team_assignee.name
+  ADD COLUMN IF NOT EXISTS priority TEXT,                              -- priority/not_priority
+  ADD COLUMN IF NOT EXISTS first_closed_at TIMESTAMPTZ,               -- statistics.first_close_at
+  ADD COLUMN IF NOT EXISTS last_closed_at TIMESTAMPTZ,                -- statistics.last_close_at
+  ADD COLUMN IF NOT EXISTS first_replied_at TIMESTAMPTZ,              -- statistics.first_admin_reply_at
+  ADD COLUMN IF NOT EXISTS last_rating_updated_at TIMESTAMPTZ,        -- conversation_rating.created_at
+  ADD COLUMN IF NOT EXISTS fin_ai_rating_updated_at TIMESTAMPTZ,      -- ai_agent.rating_updated_at
+  ADD COLUMN IF NOT EXISTS last_teammate_rating INTEGER,               -- conversation_rating.rating (1-5)
+  ADD COLUMN IF NOT EXISTS last_teammate_rating_remark TEXT,           -- conversation_rating.remark
+  ADD COLUMN IF NOT EXISTS first_response_time_seconds INTEGER,        -- statistics.time_to_admin_reply
+  ADD COLUMN IF NOT EXISTS time_to_first_assignment_seconds INTEGER,   -- statistics.first_assignment_to_first_admin_reply_time
+  ADD COLUMN IF NOT EXISTS number_of_reassignments INTEGER DEFAULT 0, -- statistics.count_assignments
+  ADD COLUMN IF NOT EXISTS handling_time_seconds INTEGER,              -- statistics.median_time_to_reply
+  ADD COLUMN IF NOT EXISTS time_to_close_seconds INTEGER,              -- derived: last_close_at - created_at
+  ADD COLUMN IF NOT EXISTS teammate_replies INTEGER DEFAULT 0,         -- derived: count admin/team parts
+  ADD COLUMN IF NOT EXISTS user_replies INTEGER DEFAULT 0,             -- derived: count user/lead parts
+  ADD COLUMN IF NOT EXISTS replies_to_close INTEGER DEFAULT 0,         -- derived: teammate + user replies
+  ADD COLUMN IF NOT EXISTS first_closed_by TEXT,                       -- derived: first close action author
+  ADD COLUMN IF NOT EXISTS last_closed_by TEXT,                        -- derived: last close action author
+  ADD COLUMN IF NOT EXISTS teammate_replied_to TEXT,                   -- derived: user_name or player_id
+  ADD COLUMN IF NOT EXISTS country TEXT,                               -- contact.location.country
+  ADD COLUMN IF NOT EXISTS continent TEXT,                             -- contact.location.continent_code
+  ADD COLUMN IF NOT EXISTS user_type TEXT,                             -- contact.type (user/lead)
+  ADD COLUMN IF NOT EXISTS user_name TEXT,                             -- contact.name
+  ADD COLUMN IF NOT EXISTS user_email TEXT,                            -- contact.email
+  ADD COLUMN IF NOT EXISTS cx_score_rating TEXT,                       -- custom_attributes['CX Score']
+  ADD COLUMN IF NOT EXISTS cx_score_explanation TEXT,                  -- custom_attributes['CX Score explanation']
+  ADD COLUMN IF NOT EXISTS copilot_used BOOLEAN DEFAULT FALSE,         -- custom_attributes['Copilot used']
+  ADD COLUMN IF NOT EXISTS last_chatbot_rating_updated_at TIMESTAMPTZ, -- ai_agent.rating_updated_at
+  ADD COLUMN IF NOT EXISTS last_chatbot_rating INTEGER,                -- ai_agent.rating
+  ADD COLUMN IF NOT EXISTS last_chatbot_rating_remark TEXT,            -- ai_agent.remark
+  ADD COLUMN IF NOT EXISTS last_chatbot_rated TEXT;                    -- ai_agent.rated_teammate.name
+
+ALTER TABLE qa_bot_conversations
+  ADD COLUMN IF NOT EXISTS channel TEXT,
+  ADD COLUMN IF NOT EXISTS source_url TEXT,
+  ADD COLUMN IF NOT EXISTS initiator_type TEXT,
+  ADD COLUMN IF NOT EXISTS started_by TEXT,
+  ADD COLUMN IF NOT EXISTS team_assigned TEXT,
+  ADD COLUMN IF NOT EXISTS priority TEXT,
+  ADD COLUMN IF NOT EXISTS first_closed_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS last_closed_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS first_replied_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS last_rating_updated_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS fin_ai_rating_updated_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS last_teammate_rating INTEGER,
+  ADD COLUMN IF NOT EXISTS last_teammate_rating_remark TEXT,
+  ADD COLUMN IF NOT EXISTS first_response_time_seconds INTEGER,
+  ADD COLUMN IF NOT EXISTS time_to_first_assignment_seconds INTEGER,
+  ADD COLUMN IF NOT EXISTS number_of_reassignments INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS handling_time_seconds INTEGER,
+  ADD COLUMN IF NOT EXISTS time_to_close_seconds INTEGER,
+  ADD COLUMN IF NOT EXISTS teammate_replies INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS user_replies INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS replies_to_close INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS first_closed_by TEXT,
+  ADD COLUMN IF NOT EXISTS last_closed_by TEXT,
+  ADD COLUMN IF NOT EXISTS teammate_replied_to TEXT,
+  ADD COLUMN IF NOT EXISTS country TEXT,
+  ADD COLUMN IF NOT EXISTS continent TEXT,
+  ADD COLUMN IF NOT EXISTS user_type TEXT,
+  ADD COLUMN IF NOT EXISTS user_name TEXT,
+  ADD COLUMN IF NOT EXISTS user_email TEXT,
+  ADD COLUMN IF NOT EXISTS cx_score_rating TEXT,
+  ADD COLUMN IF NOT EXISTS cx_score_explanation TEXT,
+  ADD COLUMN IF NOT EXISTS copilot_used BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS last_chatbot_rating_updated_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS last_chatbot_rating INTEGER,
+  ADD COLUMN IF NOT EXISTS last_chatbot_rating_remark TEXT,
+  ADD COLUMN IF NOT EXISTS last_chatbot_rated TEXT;
+
+
+-- ================================================================
 --  DONE — 10 tables created successfully.
 -- ================================================================
 SELECT 'Tables created: qa_conversations, qa_bot_conversations, qa_analysis, qa_tickets, '

@@ -1,6 +1,7 @@
 import { db } from '@/lib/data'
 import { formatDateTime } from '@/lib/utils'
 import { AlertTriangle, BarChart2, CheckCircle, Ticket, Activity } from 'lucide-react'
+import IntercomControl from '@/components/IntercomControl'
 
 function StatCard({ label, value, sub, color }: {
   label: string; value: string | number; sub?: string; color?: string
@@ -144,6 +145,11 @@ export default async function OverviewPage() {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Intercom Fetch Control — AI Manager only */}
+        <div style={{ marginBottom: '24px' }}>
+          <IntercomControl />
         </div>
 
         {/* Recent alerts */}
