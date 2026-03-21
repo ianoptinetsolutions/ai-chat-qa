@@ -49,6 +49,8 @@ export interface Ticket {
   status: TicketStatus
   feedback: FeedbackValue
   feedback_processed: boolean
+  feedback_by?: string
+  feedback_at?: string
   intercom_link: string
   created_at: string
 }

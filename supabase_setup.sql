@@ -360,6 +360,15 @@ ALTER TABLE qa_bot_conversations
 
 
 -- ================================================================
+--  MIGRATION — Ticket audit trail (2026-03-21)
+--  Adds feedback_by and feedback_at to qa_tickets for accountability.
+-- ================================================================
+ALTER TABLE qa_tickets
+  ADD COLUMN IF NOT EXISTS feedback_by   TEXT,
+  ADD COLUMN IF NOT EXISTS feedback_at   TIMESTAMPTZ;
+
+
+-- ================================================================
 --  ROW LEVEL SECURITY (RLS)
 --  Run after creating tables. Restricts direct Supabase access to
 --  authenticated users only. The dashboard uses NEXT_PUBLIC_SUPABASE_ANON_KEY

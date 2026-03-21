@@ -69,6 +69,8 @@ function toTicket(r: Row): Ticket {
     status:             r.status ?? 'Open',
     feedback:           r.feedback ?? '',
     feedback_processed: Boolean(r.feedback_processed),
+    feedback_by:        r.feedback_by ? String(r.feedback_by) : undefined,
+    feedback_at:        r.feedback_at ? String(r.feedback_at) : undefined,
     intercom_link:      String(r.intercom_link ?? ''),
     created_at:         String(r.created_at ?? ''),
   }
@@ -163,7 +165,7 @@ export const supabaseAdapter: DataAdapter = {
   async updateTicketFeedback(ticketId: string, feedback: FeedbackValue) {
     const { error } = await supabase
       .from('qa_tickets')
-      .update({ feedback })
+      .update({ feedback, feedback_at: new Date().toISOString() })
       .eq('ticket_id', ticketId)
     if (error) throw error
   },
