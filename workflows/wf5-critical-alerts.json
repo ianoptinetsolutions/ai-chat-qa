@@ -73,10 +73,55 @@
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
       "position": [980, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/qa_alerts?conversation_id=eq.{{ encodeURIComponent($json.conversation_id) }}&select=alert_id&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "apikey", "value": "={{ $env.SUPABASE_API_KEY }}"},
+            {"name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_API_KEY }}"}
+          ]
+        },
+        "options": {"response": {"response": {"fullResponse": true}}}
+      },
+      "id": "wf5-dedup-check-001",
+      "name": "Check Duplicate Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst existing = response.body || [];\nconst incomingData = $('Execute Workflow Trigger').first().json;\nif (Array.isArray(existing) && existing.length > 0) {\n  return [{ json: { _skip: true, conversation_id: incomingData.conversation_id, reason: 'Duplicate alert suppressed — alert already exists for this conversation' } }];\n}\nreturn [{ json: { ...incomingData, _skip: false } }];"
+      },
+      "id": "wf5-dedup-gate-001",
+      "name": "Skip If Duplicate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "conditions": [{"id": "skip-check-01", "leftValue": "={{ $json._skip }}", "rightValue": true, "operator": {"type": "boolean", "operation": "notTrue"}}],
+          "combinator": "and"
+        }
+      },
+      "id": "wf5-dedup-if-001",
+      "name": "Not Duplicate?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [640, 300]
     }
   ],
   "connections": {
-    "Execute Workflow Trigger": {"main": [[{"node": "Format Alert", "type": "main", "index": 0}]]},
+    "Execute Workflow Trigger": {"main": [[{"node": "Check Duplicate Alert", "type": "main", "index": 0}]]},
+    "Check Duplicate Alert": {"main": [[{"node": "Skip If Duplicate", "type": "main", "index": 0}]]},
+    "Skip If Duplicate": {"main": [[{"node": "Not Duplicate?", "type": "main", "index": 0}]]},
+    "Not Duplicate?": {"main": [[{"node": "Format Alert", "type": "main", "index": 0}], []]},
     "Format Alert": {"main": [[{"node": "Post to Slack Critical Alerts", "type": "main", "index": 0}]]},
     "Post to Slack Critical Alerts": {"main": [[{"node": "Send Critical Gmail", "type": "main", "index": 0}]]},
     "Send Critical Gmail": {"main": [[{"node": "Log to Alert Log", "type": "main", "index": 0}]]}
