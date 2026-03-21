@@ -365,6 +365,6 @@
     "No Operation": {"main": [[{"node": "Split In Batches", "type": "main", "index": 0}]]}
   },
   "active": false,
-  "settings": {"executionOrder": "v1"},
+  "settings": {"executionOrder": "v1", "maxConcurrentExecutions": 1},
   "id": "wf2-ai-analysis"
 }
