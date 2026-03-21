@@ -328,7 +328,8 @@ export const supabaseAdapter: DataAdapter = {
     for (const r of thisWeek) {
       playerCounts[r.player_id] = (playerCounts[r.player_id] ?? 0) + 1
     }
-    const repeat_complainers = Object.values(playerCounts).filter(n => n > 1).length
+    // Threshold: 3+ conversations this week — matches WF6 script threshold
+    const repeat_complainers = Object.values(playerCounts).filter(n => n >= 3).length
 
     return { daily_series, category_breakdown, agent_performance, anomalies, repeat_complainers }
   },
