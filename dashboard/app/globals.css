@@ -88,11 +88,9 @@ h1, h2, h3, h4, h5 {
 }
 
 .page-header {
-  padding: 20px 28px;
   border-bottom: 1px solid var(--border);
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   background: var(--bg-surface);
   position: sticky;
   top: 0;
@@ -475,20 +473,13 @@ select option { background: var(--bg-elevated); }
     padding-bottom: calc(var(--bottomnav-h) + env(safe-area-inset-bottom));
   }
 
-  /* Page header: sticky just below the top bar; wrap on narrow viewports */
+  /* Page header: sticky just below the top bar */
   .page-header {
     top: var(--topbar-h);
-    padding: 14px 20px;
     z-index: 38;
-    flex-wrap: wrap;
-    gap: 8px;
   }
 
   .page-content { padding: 20px; }
-
-  /* Page header: prevent right-side items from wrapping on tablet */
-  .page-header { flex-wrap: nowrap; }
-  .page-header > * { min-width: 0; }
 
   /* Drawer: narrower on tablet */
   .drawer { width: 400px; }
@@ -509,10 +500,12 @@ select option { background: var(--bg-elevated); }
      html/body already have overflow-x: hidden for horizontal clip. */
 
   .page-content { padding: 16px; }
-  .page-header  { padding: 10px 16px; flex-wrap: nowrap; gap: 8px; align-items: center; }
+  .page-header  { top: var(--topbar-h); }
   .page-header > * { min-width: 0; }
   /* Truncate the subtitle line (date / record count) so it never forces a wrap */
   .page-header > div:first-child > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Intercom strip mobile layout is handled via scoped <style> in IntercomControl.tsx */
 
   /* Drawer: full screen on mobile */
   .drawer {

@@ -50,10 +50,12 @@ export default function TrendsPage() {
   if (!data) return (
     <>
       <div className="page-header">
-        <div>
-          <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Trends</h1>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-            7-day rolling window · Pattern detection
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px' }}>
+          <div>
+            <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Trends</h1>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              7-day rolling window · Pattern detection
+            </div>
           </div>
         </div>
       </div>
@@ -71,20 +73,22 @@ export default function TrendsPage() {
   return (
     <>
       <div className="page-header">
-        <div>
-          <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Trends</h1>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-            7-day rolling window · Pattern detection
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px' }}>
+          <div>
+            <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Trends</h1>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              7-day rolling window · Pattern detection
+            </div>
           </div>
+          {data.anomalies.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--critical-dim)', border: '1px solid rgba(244,63,94,0.25)', borderRadius: '7px', padding: '6px 12px' }}>
+              <AlertTriangle size={13} color="var(--critical)" />
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--critical)' }}>
+                {data.anomalies.length} spike{data.anomalies.length !== 1 ? 's' : ''} detected
+              </span>
+            </div>
+          )}
         </div>
-        {data.anomalies.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--critical-dim)', border: '1px solid rgba(244,63,94,0.25)', borderRadius: '7px', padding: '6px 12px' }}>
-            <AlertTriangle size={13} color="var(--critical)" />
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--critical)' }}>
-              {data.anomalies.length} spike{data.anomalies.length !== 1 ? 's' : ''} detected
-            </span>
-          </div>
-        )}
       </div>
 
       <div className="page-content fade-up">

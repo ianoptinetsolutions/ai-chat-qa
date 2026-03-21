@@ -70,10 +70,12 @@ export default function AccuracyPage() {
   if (!logs.length) return (
     <>
       <div className="page-header">
-        <div>
-          <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Accuracy</h1>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-            AI analysis accuracy · Based on team feedback
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px' }}>
+          <div>
+            <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Accuracy</h1>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              AI analysis accuracy · Based on team feedback
+            </div>
           </div>
         </div>
       </div>
@@ -139,10 +141,12 @@ export default function AccuracyPage() {
   return (
     <>
       <div className="page-header">
-        <div>
-          <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Accuracy</h1>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-            AI analysis accuracy · Based on team feedback
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px' }}>
+          <div>
+            <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Accuracy</h1>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              AI analysis accuracy · Based on team feedback
+            </div>
           </div>
         </div>
       </div>

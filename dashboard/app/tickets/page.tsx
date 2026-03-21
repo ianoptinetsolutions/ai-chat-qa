@@ -39,10 +39,12 @@ export default function TicketsPage() {
   return (
     <>
       <div className="page-header">
-        <div>
-          <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Tickets</h1>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-            {tickets.length} tickets · {open} open · {pending} awaiting feedback
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px' }}>
+          <div>
+            <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Tickets</h1>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              {tickets.length} tickets · {open} open · {pending} awaiting feedback
+            </div>
           </div>
         </div>
       </div>

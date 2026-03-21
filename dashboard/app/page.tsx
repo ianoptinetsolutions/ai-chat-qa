@@ -52,18 +52,21 @@ export default async function OverviewPage() {
   return (
     <>
       <div className="page-header">
-        <div>
-          <h1 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>Overview</h1>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-            {now} UTC
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 22px' }}>
+          <div>
+            <h1 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>Overview</h1>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              {now} UTC
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green)' }} />
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--text-muted)' }}>
+              System operational
+            </span>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green)' }} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--text-muted)' }}>
-            System operational
-          </span>
-        </div>
+        <IntercomControl />
       </div>
 
       <div className="page-content fade-up">
@@ -145,11 +148,6 @@ export default async function OverviewPage() {
               ))}
             </div>
           </div>
-        </div>
-
-        {/* Intercom Fetch Control — AI Manager only */}
-        <div style={{ marginBottom: '24px' }}>
-          <IntercomControl />
         </div>
 
         {/* Recent alerts */}

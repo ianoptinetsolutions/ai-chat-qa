@@ -88,10 +88,12 @@ export default function ReportsPage() {
   return (
     <>
       <div className="page-header">
-        <div>
-          <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Monthly Reports</h1>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-            {approved.length} approved · {drafts.length} draft
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 28px' }}>
+          <div>
+            <h1 style={{ fontSize: '18px', fontWeight: 600 }}>Monthly Reports</h1>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              {approved.length} approved · {drafts.length} draft
+            </div>
           </div>
         </div>
       </div>
