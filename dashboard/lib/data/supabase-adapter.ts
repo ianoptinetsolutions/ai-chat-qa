@@ -125,11 +125,16 @@ function dayStr(daysAgo: number): string {
 export const supabaseAdapter: DataAdapter = {
 
   async getConversations(filters?: ConversationFilters) {
+    const page     = filters?.page     ?? 0
+    const pageSize = filters?.pageSize ?? 100
+    const from     = page * pageSize
+    const to       = from + pageSize - 1
+
     let q = supabase
       .from('qa_analysis')
       .select('*')
       .order('analyzed_at', { ascending: false })
-      .limit(500)
+      .range(from, to)
     if (filters?.severity)   q = q.eq('severity', filters.severity)
     if (filters?.category)   q = q.eq('issue_category', filters.category)
     if (filters?.resolution) q = q.eq('resolution_status', filters.resolution)

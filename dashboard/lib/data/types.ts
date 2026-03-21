@@ -126,6 +126,8 @@ export interface ConversationFilters {
   resolution?: ResolutionStatus | ''
   agent?: string
   language?: string
+  page?: number      // 0-based page index, defaults to 0
+  pageSize?: number  // rows per page, defaults to 100
 }
 
 export interface TicketFilters {
