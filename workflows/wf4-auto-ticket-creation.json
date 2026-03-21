@@ -129,6 +129,20 @@
     },
     {
       "parameters": {
+        "operation": "post",
+        "channel": "={{ $env.SLACK_CHANNEL_ALERTS || '#chat-qa-inbox' }}",
+        "text": "=:warning: *Agent not in qa_agent_map* — ticket routed to #chat-qa-inbox fallback.\n*Agent:* {{ $('Build Ticket').item.json.agent_name }}\n*Ticket:* {{ $('Build Ticket').item.json.ticket_id }}\n*Action required:* Add this agent to the `qa_agent_map` table to enable direct team leader routing.",
+        "otherOptions": {}
+      },
+      "id": "wf4-unmapped-alert-001",
+      "name": "Alert Unmapped Agent",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [1200, 480],
+      "credentials": {"slackApi": {"id": "slack_api", "name": "slack_api"}}
+    },
+    {
+      "parameters": {
         "operation": "create",
         "tableId": "qa_tickets",
         "fieldsUi": {
@@ -229,7 +243,8 @@
       ]
     },
     "Set Assigned To (Leader)": {"main": [[{"node": "Insert Ticket to Supabase", "type": "main", "index": 0}]]},
-    "Set Assigned To (Fallback)": {"main": [[{"node": "Insert Ticket to Supabase", "type": "main", "index": 0}]]},
+    "Set Assigned To (Fallback)": {"main": [[{"node": "Alert Unmapped Agent", "type": "main", "index": 0}]]},
+    "Alert Unmapped Agent": {"main": [[{"node": "Insert Ticket to Supabase", "type": "main", "index": 0}]]},
     "Insert Ticket to Supabase": {"main": [[{"node": "Send Slack DM", "type": "main", "index": 0}]]},
     "Send Slack DM": {"main": [[{"node": "Check if Critical", "type": "main", "index": 0}]]},
     "Check if Critical": {
