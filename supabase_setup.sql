@@ -360,6 +360,46 @@ ALTER TABLE qa_bot_conversations
 
 
 -- ================================================================
+--  ROW LEVEL SECURITY (RLS)
+--  Run after creating tables. Restricts direct Supabase access to
+--  authenticated users only. The dashboard uses NEXT_PUBLIC_SUPABASE_ANON_KEY
+--  (browser-visible), so RLS is required to prevent public data exposure.
+--
+--  n8n workflows use the service_role key which bypasses RLS — no change needed there.
+--  Dashboard users must sign in via Supabase Auth before reading data.
+--
+--  Safe to run multiple times (CREATE POLICY uses IF NOT EXISTS via DROP/CREATE pattern).
+-- ================================================================
+
+ALTER TABLE qa_conversations       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE qa_bot_conversations   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE qa_analysis            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE qa_tickets             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE qa_alerts              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE qa_agent_map           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE qa_trends              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE qa_accuracy            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE qa_daily_reports       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE qa_monthly_reports     ENABLE ROW LEVEL SECURITY;
+
+-- Authenticated users can read all QA tables (dashboard read access)
+CREATE POLICY "auth_read_qa_conversations"      ON qa_conversations      FOR SELECT TO authenticated USING (true);
+CREATE POLICY "auth_read_qa_bot_conversations"  ON qa_bot_conversations  FOR SELECT TO authenticated USING (true);
+CREATE POLICY "auth_read_qa_analysis"           ON qa_analysis           FOR SELECT TO authenticated USING (true);
+CREATE POLICY "auth_read_qa_tickets"            ON qa_tickets            FOR SELECT TO authenticated USING (true);
+CREATE POLICY "auth_read_qa_alerts"             ON qa_alerts             FOR SELECT TO authenticated USING (true);
+CREATE POLICY "auth_read_qa_agent_map"          ON qa_agent_map          FOR SELECT TO authenticated USING (true);
+CREATE POLICY "auth_read_qa_trends"             ON qa_trends             FOR SELECT TO authenticated USING (true);
+CREATE POLICY "auth_read_qa_accuracy"           ON qa_accuracy           FOR SELECT TO authenticated USING (true);
+CREATE POLICY "auth_read_qa_daily_reports"      ON qa_daily_reports      FOR SELECT TO authenticated USING (true);
+CREATE POLICY "auth_read_qa_monthly_reports"    ON qa_monthly_reports    FOR SELECT TO authenticated USING (true);
+
+-- Authenticated users can update tickets (feedback submission) and monthly reports (approval)
+CREATE POLICY "auth_update_qa_tickets"          ON qa_tickets           FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_update_qa_monthly_reports"  ON qa_monthly_reports   FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+
+
+-- ================================================================
 --  DONE — 10 tables created successfully.
 -- ================================================================
 SELECT 'Tables created: qa_conversations, qa_bot_conversations, qa_analysis, qa_tickets, '

@@ -1,3 +1,6 @@
+// SECURITY NOTE: Uses NEXT_PUBLIC_SUPABASE_ANON_KEY (browser-visible).
+// RLS must be enabled on all qa_* tables — see supabase_setup.sql.
+// Users must be authenticated via Supabase Auth before any data is readable.
 import { createClient } from '@supabase/supabase-js'
 import type {
   DataAdapter, AnalysisResult, Ticket, AlertLog, AccuracyLog,
