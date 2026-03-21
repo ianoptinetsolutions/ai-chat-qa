@@ -5,6 +5,8 @@ export type IssueCategory =
   | 'Login/Account'
   | 'Bonus/Promotion'
   | 'Technical Error'
+  | 'Website & Navigation'
+  | 'Device & Compatibility'
   | 'Slow Response'
   | 'Inappropriate Communication'
   | 'Other'

@@ -292,7 +292,8 @@ export const supabaseAdapter: DataAdapter = {
     // Category breakdown with pct_change vs previous 7 days
     const CATEGORIES = [
       'Payment/Withdrawal', 'Game Bug', 'Login/Account', 'Bonus/Promotion',
-      'Technical Error', 'Slow Response', 'Inappropriate Communication', 'Other',
+      'Technical Error', 'Website & Navigation', 'Device & Compatibility',
+      'Slow Response', 'Inappropriate Communication', 'Other',
     ]
     const category_breakdown = CATEGORIES.map(cat => {
       const thisCount = thisWeek.filter(r => r.issue_category === cat).length

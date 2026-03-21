@@ -39,7 +39,7 @@ try {
 
   const VALID_LANGUAGES   = ['ar', 'de', 'el', 'en', 'fi', 'fr', 'it', 'no', 'pt'];
   const VALID_SEVERITIES  = ['Low', 'Medium', 'High', 'Critical'];
-  const VALID_CATEGORIES  = ['Payment/Withdrawal', 'Game Bug', 'Login/Account', 'Bonus/Promotion', 'Technical Error', 'Slow Response', 'Inappropriate Communication', 'Other'];
+  const VALID_CATEGORIES  = ['Payment/Withdrawal', 'Game Bug', 'Login/Account', 'Bonus/Promotion', 'Technical Error', 'Website & Navigation', 'Device & Compatibility', 'Slow Response', 'Inappropriate Communication', 'Other'];
   const VALID_RESOLUTIONS = ['Resolved', 'Partially Resolved', 'Unresolved'];
 
   // agent_score is null for bot-handled conversations; default to 5 only for human conversations
