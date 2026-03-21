@@ -409,6 +409,36 @@ CREATE POLICY "auth_update_qa_monthly_reports"  ON qa_monthly_reports   FOR UPDA
 
 
 -- ================================================================
+--  DATA RETENTION — 90-day cleanup for raw conversation tables (2026-03-21)
+--  Purges only PII-containing transcript data. Analytics tables are kept indefinitely.
+--
+--  SETUP REQUIRED:
+--  1. Enable pg_cron: Supabase Dashboard → Database → Extensions → pg_cron
+--  2. Run: CREATE EXTENSION IF NOT EXISTS pg_cron;
+--  3. Then run the cron.schedule() line below.
+-- ================================================================
+
+CREATE OR REPLACE FUNCTION delete_old_conversations() RETURNS void AS $$
+BEGIN
+  -- Delete raw conversation transcripts older than 90 days (contains PII)
+  DELETE FROM qa_conversations
+    WHERE collected_at < NOW() - INTERVAL '90 days';
+
+  DELETE FROM qa_bot_conversations
+    WHERE collected_at < NOW() - INTERVAL '90 days';
+
+  -- Note: qa_analysis, qa_tickets, qa_alerts, qa_trends, qa_accuracy,
+  -- qa_daily_reports, and qa_monthly_reports are kept indefinitely
+  -- for historical reporting and audit purposes.
+END;
+$$ LANGUAGE plpgsql;
+
+-- Schedule: run at 03:00 UTC every Sunday
+-- Uncomment after enabling pg_cron extension:
+-- SELECT cron.schedule('qa-retention-cleanup', '0 3 * * 0', 'SELECT delete_old_conversations()');
+
+
+-- ================================================================
 --  DONE — 10 tables created successfully.
 -- ================================================================
 SELECT 'Tables created: qa_conversations, qa_bot_conversations, qa_analysis, qa_tickets, '
