@@ -1,0 +1,44 @@
+name: Validate n8n Workflows
+
+on:
+  push:
+    paths:
+      - 'workflows/**'
+      - 'scripts/**'
+  pull_request:
+    paths:
+      - 'workflows/**'
+      - 'scripts/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate all workflow JSON files
+        run: |
+          for f in workflows/*.json; do
+            node -e "JSON.parse(require('fs').readFileSync('$f','utf8')); console.log('OK: $f')"
+          done
+
+      - name: Check no pre-migration table names remain
+        run: |
+          BAD_NAMES="raw_conversations|analysis_results|report_log|weekly_trends|accuracy_log|alert_log|monthly_reports"
+          if grep -rE "\"tableId\": \"($BAD_NAMES)\"" workflows/; then
+            echo "ERROR: Found pre-migration table name(s) — all tableId values must use the qa_ prefix"
+            exit 1
+          fi
+          echo "All table names use qa_ prefix."
+
+      - name: Check VALID_CATEGORIES includes all 10 categories
+        run: |
+          if ! grep -q "Website & Navigation" scripts/wf2-parse-ai-response.js; then
+            echo "ERROR: Missing 'Website & Navigation' in VALID_CATEGORIES"
+            exit 1
+          fi
+          if ! grep -q "Device & Compatibility" scripts/wf2-parse-ai-response.js; then
+            echo "ERROR: Missing 'Device & Compatibility' in VALID_CATEGORIES"
+            exit 1
+          fi
+          echo "Category validation passed."
