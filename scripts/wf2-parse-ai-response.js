@@ -6,7 +6,7 @@
  *
  * Input:
  *   - $input.first().json                   — raw Anthropic API response
- *   - $('Build OpenAI Request').first().json — conversation metadata
+ *   - $('Build Claude Request').first().json — conversation metadata
  *
  * Claude response format: { content: [{ type: "text", text: "<json string>" }] }
  * Reads: response.content?.[0]?.text

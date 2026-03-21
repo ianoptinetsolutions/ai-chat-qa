@@ -27,11 +27,11 @@ const ticketIdsProcessed = [];
 
 for (const ticket of reviewedTickets) {
   // Handle both object-key and array-index formats from Google Sheets
-  const feedback      = ticket.feedback      || ticket[12] || '';
-  const category      = ticket.issue_category || ticket[6]  || 'Other';
-  const severity      = ticket.severity       || ticket[5]  || 'Medium';
-  const language      = ticket.language       || ticket[10] || 'en'; // col K = index 10 in Sheets
-  const ticketId      = ticket.ticket_id      || ticket[0]  || '';
+  const feedback      = ticket.feedback       || '';
+  const category      = ticket.issue_category || 'Other';
+  const severity      = ticket.severity       || 'Medium';
+  const language      = ticket.language       || 'en';
+  const ticketId      = ticket.ticket_id      || '';
 
   const isAgree = feedback.toLowerCase().trim() === 'agree';
   const isDisagree = feedback.toLowerCase().trim() === 'disagree';

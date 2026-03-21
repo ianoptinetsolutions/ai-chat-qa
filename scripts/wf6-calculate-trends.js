@@ -99,7 +99,7 @@ for (const category of allCategories) {
 topIssues.sort((a, b) => b.count - a.count);
 
 // Repeat complainers: players with 3+ complaints in window
-const repeatComplainters = Object.entries(playerComplaints)
+const repeatComplainers = Object.entries(playerComplaints)
   .filter(([, count]) => count >= 3)
   .map(([playerId, count]) => ({ player_id: playerId, complaint_count: count }))
   .sort((a, b) => b.complaint_count - a.complaint_count);
@@ -121,8 +121,8 @@ return [{
     week_end:             todayStr,
     top_issues_json:      JSON.stringify(topIssues),
     anomalies_json:       JSON.stringify(anomalies),
-    repeat_complainers:   repeatComplainters.length,
-    repeat_complainers_detail: repeatComplainters,
+    repeat_complainers:   repeatComplainers.length,
+    repeat_complainers_detail: repeatComplainers,
     agent_flags_json:     JSON.stringify(agentFlags),
     has_anomalies:        anomalies.length > 0,
     total_rows_analyzed:  rows.length,

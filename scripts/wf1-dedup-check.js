@@ -1,14 +1,20 @@
 /**
- * WF1 — Deduplication Check
+ * WF1 — Deduplication Check (REFERENCE ONLY — not used as-is in production)
  *
- * Compares the current conversation_id against rows already in Google Sheets.
- * Returns a flag indicating whether to append (new) or update (existing/reopened).
+ * NOTE: This file was written for the original Google Sheets version of WF1.
+ * The production Supabase workflow handles deduplication via Supabase's
+ * UNIQUE constraint on qa_conversations.conversation_id — any insert of
+ * a duplicate conversation_id is rejected at the DB level (upsert/ON CONFLICT).
  *
- * Input:
+ * This file is kept as documentation of the dedup logic intent.
+ * The actual WF1 workflow uses an HTTP Request upsert to qa_conversations,
+ * not this Code node.
+ *
+ * Input (legacy):
  *   - $('Format Transcript').first().json — the formatted conversation
- *   - $('Read Raw Conversations').all()   — existing rows from Google Sheets
+ *   - $('Read Raw Conversations').all()   — existing rows (was Google Sheets)
  *
- * Output: single item with action = 'append' | 'update' and all conversation fields
+ * Output: single item with action = 'append' | 'update' | 'skip' and all conversation fields
  */
 
 const formatted = $('Format Transcript').first().json;
