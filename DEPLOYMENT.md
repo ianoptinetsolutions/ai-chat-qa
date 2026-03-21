@@ -253,3 +253,44 @@ Every 6h   WF7 — Process feedback from Tickets sheet → Accuracy_Log
 
 1st/month  WF8 — Monthly report → Claude HTML generation → email draft to QA Manager
 ```
+
+---
+
+## SECURITY INCIDENT RESPONSE: Secrets Committed to Git
+
+If `.env` or any API key was ever committed to git history, perform all steps below immediately.
+
+### Step 1: Rotate all credentials
+
+| Service | Where to rotate |
+|---------|----------------|
+| Intercom | Settings → Developers → API Keys → Delete + Create new |
+| Anthropic | console.anthropic.com → API Keys → Delete + Create new |
+| Slack Bot Token | api.slack.com → Your Apps → OAuth & Permissions → Regenerate |
+| Supabase service_role | Project Settings → API → Regenerate service_role key |
+| Supabase anon key | Project Settings → API → Regenerate anon key |
+| n8n Cloud API key | n8n Settings → API → Delete + Create new |
+| Vercel token | vercel.com → Settings → Tokens → Delete + Create new |
+
+### Step 2: Remove secrets from git history
+
+```bash
+# Install git-filter-repo if needed: pip install git-filter-repo
+git filter-repo --path .env --invert-paths
+git push --force-with-lease
+```
+
+### Step 3: Update all n8n credentials with new values
+
+In n8n: Settings → Credentials → update each credential with the new keys.
+
+### Step 4: Update Vercel environment variables
+
+In Vercel dashboard: Project → Settings → Environment Variables → update Supabase keys.
+
+### Step 5: Confirm pre-commit hook is active
+
+The `.githooks/pre-commit` hook blocks future `.env` commits. Verify it's configured:
+```bash
+git config core.hooksPath  # should output: .githooks
+```

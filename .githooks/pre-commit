@@ -1,0 +1,10 @@
+#!/bin/sh
+# Block committing .env files containing secrets
+if git diff --cached --name-only | grep -qE '^\.env(\.[a-z]+)?$'; then
+  echo ""
+  echo "ERROR: Attempted to commit a .env file containing secrets."
+  echo "Remove it from staging with:"
+  echo "  git reset HEAD .env"
+  echo ""
+  exit 1
+fi
