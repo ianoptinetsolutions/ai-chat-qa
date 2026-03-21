@@ -22,7 +22,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/agent_team_mapping?agent_name=eq.{{ encodeURIComponent($json.agent_name) }}&select=agent_name,team_leader_name,team_leader_slack_id&limit=1",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/qa_agent_map?agent_name=eq.{{ encodeURIComponent($json.agent_name) }}&select=agent_name,team_leader_name,team_leader_slack_id&limit=1",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -130,7 +130,7 @@
     {
       "parameters": {
         "operation": "create",
-        "tableId": "tickets",
+        "tableId": "qa_tickets",
         "fieldsUi": {
           "fieldValues": [
             {"fieldId": "ticket_id", "fieldValue": "={{ $('Build Ticket').item.json.ticket_id }}"},

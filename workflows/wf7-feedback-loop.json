@@ -16,7 +16,7 @@
     {
       "parameters": {
         "operation": "getAll",
-        "tableId": "tickets",
+        "tableId": "qa_tickets",
         "returnAll": true,
         "filters": {
           "values": [
@@ -79,7 +79,7 @@
     {
       "parameters": {
         "operation": "create",
-        "tableId": "accuracy_log",
+        "tableId": "qa_accuracy",
         "fieldsUi": {
           "fieldValues": [
             {"fieldId": "date", "fieldValue": "={{ $json.date }}"},
@@ -113,7 +113,7 @@
     {
       "parameters": {
         "operation": "update",
-        "tableId": "tickets",
+        "tableId": "qa_tickets",
         "filters": {
           "values": [
             {"keyName": "ticket_id", "condition": "eq", "keyValue": "={{ $json.ticket_id }}"}

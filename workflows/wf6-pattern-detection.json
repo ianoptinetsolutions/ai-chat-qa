@@ -16,7 +16,7 @@
     {
       "parameters": {
         "operation": "getAll",
-        "tableId": "analysis_results",
+        "tableId": "qa_analysis",
         "returnAll": true,
         "filters": {
           "values": [
@@ -127,7 +127,7 @@
     {
       "parameters": {
         "operation": "create",
-        "tableId": "weekly_trends",
+        "tableId": "qa_trends",
         "fieldsUi": {
           "fieldValues": [
             {"fieldId": "week_start", "fieldValue": "={{ $('Calculate Trends').first().json.week_start }}"},

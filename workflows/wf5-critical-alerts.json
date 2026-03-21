@@ -52,7 +52,7 @@
     {
       "parameters": {
         "operation": "create",
-        "tableId": "alert_log",
+        "tableId": "qa_alerts",
         "fieldsUi": {
           "fieldValues": [
             {"fieldId": "alert_id", "fieldValue": "={{ $('Format Alert').item.json.alert_id }}"},

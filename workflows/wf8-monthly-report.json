@@ -16,7 +16,7 @@
     {
       "parameters": {
         "operation": "getAll",
-        "tableId": "analysis_results",
+        "tableId": "qa_analysis",
         "returnAll": true,
         "filters": {
           "values": [
@@ -43,7 +43,7 @@
     {
       "parameters": {
         "operation": "getAll",
-        "tableId": "accuracy_log",
+        "tableId": "qa_accuracy",
         "returnAll": true,
         "filters": {
           "values": [
@@ -70,7 +70,7 @@
     {
       "parameters": {
         "operation": "getAll",
-        "tableId": "alert_log",
+        "tableId": "qa_alerts",
         "returnAll": true,
         "filters": {
           "values": [
@@ -180,7 +180,7 @@
     {
       "parameters": {
         "operation": "create",
-        "tableId": "monthly_reports",
+        "tableId": "qa_monthly_reports",
         "fieldsUi": {
           "fieldValues": [
             {"fieldId": "month", "fieldValue": "={{ $('Parse Monthly Report').first().json.month }}"},
