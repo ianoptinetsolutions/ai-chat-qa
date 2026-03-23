@@ -22,12 +22,12 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/qa_agent_map?agent_name=eq.{{ encodeURIComponent($json.agent_name) }}&select=agent_name,team_leader_name,team_leader_slack_id&limit=1",
+        "url": "={{ `${$env.SUPABASE_URL}/rest/v1/qa_agent_map?agent_name=eq.${encodeURIComponent($json.agent_name)}&select=agent_name,team_leader_name,team_leader_slack_id&limit=1` }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {"name": "apikey", "value": "={{ $env.SUPABASE_API_KEY }}"},
-            {"name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_API_KEY }}"}
+            {"name": "Authorization", "value": "={{ `Bearer ${$env.SUPABASE_API_KEY}` }}"}
           ]
         },
         "options": {
@@ -131,7 +131,7 @@
       "parameters": {
         "operation": "post",
         "channel": "={{ $env.SLACK_CHANNEL_ALERTS || '#chat-qa-inbox' }}",
-        "text": "=:warning: *Agent not in qa_agent_map* — ticket routed to #chat-qa-inbox fallback.\n*Agent:* {{ $('Build Ticket').item.json.agent_name }}\n*Ticket:* {{ $('Build Ticket').item.json.ticket_id }}\n*Action required:* Add this agent to the `qa_agent_map` table to enable direct team leader routing.",
+        "text": "={{ `:warning: *Agent not in qa_agent_map* — ticket routed to #chat-qa-inbox fallback.\\n*Agent:* ${$('Build Ticket').item.json.agent_name}\\n*Ticket:* ${$('Build Ticket').item.json.ticket_id}\\n*Action required:* Add this agent to the \\`qa_agent_map\\` table to enable direct team leader routing.` }}",
         "otherOptions": {}
       },
       "id": "wf4-unmapped-alert-001",

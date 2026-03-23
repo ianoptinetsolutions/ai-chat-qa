@@ -5,10 +5,13 @@ on:
     branches: [main]
     paths:
       - 'dashboard/**'
+  pull_request:
+    paths:
+      - 'dashboard/**'
   workflow_dispatch:
 
 jobs:
-  deploy:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,6 +30,24 @@ jobs:
       - name: Type check
         working-directory: dashboard
         run: npx tsc --noEmit
+
+  deploy:
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install dependencies
+        working-directory: dashboard
+        run: npm ci
 
       - name: Build
         working-directory: dashboard

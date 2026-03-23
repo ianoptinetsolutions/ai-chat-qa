@@ -1,6 +1,6 @@
 #!/bin/sh
 # Block committing .env files containing secrets
-if git diff --cached --name-only | grep -qE '^\.env(\.[a-z]+)?$'; then
+if git diff --cached --name-only | grep -qE '(^|/)\.env(\.[a-zA-Z0-9]+)?$'; then
   echo ""
   echo "ERROR: Attempted to commit a .env file containing secrets."
   echo "Remove it from staging with:"

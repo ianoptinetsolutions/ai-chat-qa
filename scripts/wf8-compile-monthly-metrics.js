@@ -1,7 +1,7 @@
 /**
  * WF8 — Compile Monthly Metrics
  *
- * Aggregates data from multiple Google Sheets tabs for the previous month
+ * Aggregates data from multiple Supabase tables for the previous month
  * into a single metrics object for the Claude monthly report generator.
  *
  * Input:

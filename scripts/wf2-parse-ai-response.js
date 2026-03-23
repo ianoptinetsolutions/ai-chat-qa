@@ -47,7 +47,8 @@ try {
   if (isBotHandled) {
     agentScore = null;
   } else {
-    agentScore = Number.isInteger(parsed.agent_performance_score) ? parsed.agent_performance_score : 5;
+    const raw = parsed.agent_performance_score;
+    agentScore = (Number.isInteger(raw) && raw >= 1 && raw <= 5) ? raw : 5;
   }
 
   return [{

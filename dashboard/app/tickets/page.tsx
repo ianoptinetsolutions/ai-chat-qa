@@ -15,13 +15,16 @@ export default function TicketsPage() {
   const [feedback, setFeedback] = useState<Record<string, FeedbackValue>>({})
 
   useEffect(() => {
-    db.getTickets(filters).then(data => {
-      setTickets(data)
-      const init: Record<string, FeedbackValue> = {}
-      data.forEach(t => { init[t.ticket_id] = t.feedback })
-      setFeedback(init)
-      setLoading(false)
-    })
+    setLoading(true)
+    db.getTickets(filters)
+      .then(data => {
+        setTickets(data)
+        const init: Record<string, FeedbackValue> = {}
+        data.forEach(t => { init[t.ticket_id] = t.feedback })
+        setFeedback(init)
+        setLoading(false)
+      })
+      .catch(() => { setTickets([]); setLoading(false) })
   }, [filters])
 
   async function handleFeedback(ticketId: string, value: FeedbackValue) {
@@ -34,7 +37,7 @@ export default function TicketsPage() {
   }
 
   const open = tickets.filter(t => t.status === 'Open').length
-  const pending = tickets.filter(t => t.feedback === '').length
+  const pending = tickets.filter(t => !t.feedback).length
 
   return (
     <>

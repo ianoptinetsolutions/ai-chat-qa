@@ -18,7 +18,14 @@ jobs:
 
       - name: Validate all workflow JSON files
         run: |
-          for f in workflows/*.json; do
+          set -euo pipefail
+          shopt -s nullglob
+          files=(workflows/*.json)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No workflow JSON files found."
+            exit 0
+          fi
+          for f in "${files[@]}"; do
             node -e "JSON.parse(require('fs').readFileSync('$f','utf8')); console.log('OK: $f')"
           done
 

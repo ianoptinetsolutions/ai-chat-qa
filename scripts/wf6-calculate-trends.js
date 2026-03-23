@@ -30,7 +30,10 @@ for (const row of rows) {
   const severity = row.severity || row[4] || 'Low';
   const playerId = row.player_id || row[1] || '';
   const agentName = row.agent_name || row[2] || '';
-  const agentScore = parseInt(row.agent_score || row[8] || 3, 10);
+  const rawScore = row.agent_score ?? row[8] ?? null;
+  const agentScore = (rawScore !== null && rawScore !== undefined && rawScore !== '')
+    ? parseInt(rawScore, 10)
+    : null;
 
   // Date-category matrix
   if (!byDateCategory[date]) byDateCategory[date] = {};
@@ -41,8 +44,8 @@ for (const row of rows) {
     playerComplaints[playerId] = (playerComplaints[playerId] || 0) + 1;
   }
 
-  // Agent performance
-  if (agentName) {
+  // Agent performance — skip bot-handled conversations (null score)
+  if (agentName && agentScore !== null && !isNaN(agentScore)) {
     if (!agentScores[agentName]) agentScores[agentName] = { total: 0, count: 0, flagged: 0 };
     agentScores[agentName].total += agentScore;
     agentScores[agentName].count++;
@@ -71,25 +74,27 @@ for (const category of allCategories) {
   }
 
   const total7d = dailyCounts.reduce((sum, c) => sum + c, 0);
-  const avg7d = total7d / 7;
   const todayCount = dailyCounts[6]; // last element = today
+  // Use prior 6 days as baseline to avoid today inflating its own average
+  const prior6Total = dailyCounts.slice(0, 6).reduce((sum, c) => sum + c, 0);
+  const avg6d = prior6Total / 6;
 
-  const pctChange = avg7d > 0 ? Math.round(((todayCount - avg7d) / avg7d) * 100) : 0;
+  const pctChange = avg6d > 0 ? Math.round(((todayCount - avg6d) / avg6d) * 100) : 0;
 
   topIssues.push({
     category,
     count: total7d,
     today_count: todayCount,
-    daily_avg: Math.round(avg7d * 10) / 10,
+    daily_avg: Math.round(avg6d * 10) / 10,
     pct_change: pctChange,
   });
 
-  // Flag if today's count is >150% of the 7-day average (and avg > 0)
-  if (avg7d > 0 && todayCount > avg7d * 1.5) {
+  // Flag if today's count is >150% of the prior 6-day average (require ≥2 prior events to avoid noise)
+  if (avg6d > 0 && todayCount > avg6d * 1.5 && prior6Total >= 2) {
     anomalies.push({
       category,
       today_count: todayCount,
-      daily_avg: Math.round(avg7d * 10) / 10,
+      daily_avg: Math.round(avg6d * 10) / 10,
       spike_pct: pctChange,
     });
   }

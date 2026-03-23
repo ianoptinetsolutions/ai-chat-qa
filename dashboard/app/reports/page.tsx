@@ -29,7 +29,7 @@ function ReportPreviewModal({ report, onClose, onApprove }: {
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             {report.status === 'draft' && (
-              <button className="btn-primary" onClick={onApprove}>
+              <button className="btn-primary" onClick={onApprove} disabled={report.status !== 'draft'}>
                 Approve Report
               </button>
             )}
@@ -69,17 +69,25 @@ export default function ReportsPage() {
   const [preview, setPreview] = useState<MonthlyReport | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const [approving, setApproving] = useState<string | null>(null)
+
   useEffect(() => {
-    db.getReports().then(data => {
-      setReports(data)
-      setLoading(false)
-    })
+    setLoading(true)
+    db.getReports()
+      .then(data => { setReports(data); setLoading(false) })
+      .catch(() => setLoading(false))
   }, [])
 
   async function handleApprove(month: string) {
-    await db.approveReport(month)
-    setReports(rs => rs.map(r => r.month === month ? { ...r, status: 'approved' } : r))
-    if (preview?.month === month) setPreview(p => p ? { ...p, status: 'approved' } : null)
+    if (approving) return
+    setApproving(month)
+    try {
+      await db.approveReport(month)
+      setReports(rs => rs.map(r => r.month === month ? { ...r, status: 'approved' } : r))
+      if (preview?.month === month) setPreview(p => p ? { ...p, status: 'approved' } : null)
+    } finally {
+      setApproving(null)
+    }
   }
 
   const drafts = reports.filter(r => r.status === 'draft')
@@ -174,8 +182,8 @@ export default function ReportsPage() {
                         <Eye size={12} /> Preview
                       </button>
                       {isDraft && (
-                        <button className="btn-primary" onClick={() => handleApprove(r.month)}>
-                          Approve
+                        <button className="btn-primary" onClick={() => handleApprove(r.month)} disabled={approving === r.month}>
+                          {approving === r.month ? 'Approving…' : 'Approve'}
                         </button>
                       )}
                     </div>

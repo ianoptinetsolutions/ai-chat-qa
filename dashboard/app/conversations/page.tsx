@@ -156,10 +156,10 @@ export default function ConversationsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    db.getConversations(filters).then(data => {
-      setConversations(data)
-      setLoading(false)
-    })
+    setLoading(true)
+    db.getConversations(filters)
+      .then(data => { setConversations(data); setLoading(false) })
+      .catch(() => { setConversations([]); setLoading(false) })
   }, [filters])
 
   const setFilter = (key: keyof ConversationFilters, value: string) => {

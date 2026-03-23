@@ -26,7 +26,7 @@ const languageAccuracy = {};
 const ticketIdsProcessed = [];
 
 for (const ticket of reviewedTickets) {
-  // Handle both object-key and array-index formats from Google Sheets
+  // Handle both object-key and array-index formats from Supabase
   const feedback      = ticket.feedback       || '';
   const category      = ticket.issue_category || 'Other';
   const severity      = ticket.severity       || 'Medium';
@@ -78,10 +78,35 @@ const notes = `Batch processed ${totalReviewed} tickets. `
   + `Accuracy: ${Math.round(accuracyRate * 100)}%. `
   + `Worst category: ${worstCategory} (${Math.round(worstDisagreementRate * 100)}% disagreement).`;
 
-// Build per-language accuracy rows
+// Build per-language accuracy rows with per-language worst category
 const languageRows = Object.entries(languageAccuracy).map(([lang, data]) => {
   const langTotal = data.agreed + data.disagreed;
   const langRate = langTotal > 0 ? Math.round((data.agreed / langTotal) * 1000) / 1000 : 0;
+
+  // Compute per-language worst category from tickets in this language
+  const langCategoryAcc = {};
+  for (const ticket of reviewedTickets) {
+    if ((ticket.language || 'en') !== lang) continue;
+    const fb = ticket.feedback || '';
+    const cat = ticket.issue_category || 'Other';
+    const isAgree = fb.toLowerCase().trim() === 'agree';
+    const isDisagree = fb.toLowerCase().trim() === 'disagree';
+    if (!isAgree && !isDisagree) continue;
+    if (!langCategoryAcc[cat]) langCategoryAcc[cat] = { agreed: 0, disagreed: 0 };
+    if (isAgree) langCategoryAcc[cat].agreed++;
+    else langCategoryAcc[cat].disagreed++;
+  }
+  let langWorstCategory = 'N/A';
+  let langWorstRate = 0;
+  for (const [cat, catData] of Object.entries(langCategoryAcc)) {
+    const catTotal = catData.agreed + catData.disagreed;
+    const disagreeRate = catTotal > 0 ? catData.disagreed / catTotal : 0;
+    if (disagreeRate > langWorstRate) {
+      langWorstRate = disagreeRate;
+      langWorstCategory = cat;
+    }
+  }
+
   return {
     json: {
       date:            dateStr,
@@ -89,7 +114,7 @@ const languageRows = Object.entries(languageAccuracy).map(([lang, data]) => {
       agreed:          data.agreed,
       disagreed:       data.disagreed,
       accuracy_rate:   langRate,
-      worst_category:  worstCategory,
+      worst_category:  langWorstCategory,
       notes:           `Language: ${lang}. ${langTotal} tickets reviewed. Accuracy: ${Math.round(langRate * 100)}%.`,
       language:        lang,
       _ticket_ids_processed: [],

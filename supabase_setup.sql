@@ -107,7 +107,7 @@ CREATE INDEX IF NOT EXISTS idx_qa_analysis_analyzed_at
 
 
 -- ----------------------------------------------------------------
---  3. QA_TICKETS
+--  4. QA_TICKETS
 --     QA tickets created for Medium / High / Critical conversations.
 --     WF4 inserts here. Team leaders update status and feedback.
 -- ----------------------------------------------------------------
@@ -138,7 +138,7 @@ CREATE INDEX IF NOT EXISTS idx_qa_tickets_feedback_processed
 
 
 -- ----------------------------------------------------------------
---  4. QA_ALERTS
+--  5. QA_ALERTS
 --     Records every critical alert fired by WF5.
 -- ----------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS qa_alerts (
@@ -157,7 +157,7 @@ CREATE TABLE IF NOT EXISTS qa_alerts (
 
 
 -- ----------------------------------------------------------------
---  5. QA_AGENT_MAP
+--  6. QA_AGENT_MAP
 --     Maps agents to their team leaders for ticket routing.
 --     Maintained manually — update as team structure changes.
 -- ----------------------------------------------------------------
@@ -172,7 +172,7 @@ CREATE TABLE IF NOT EXISTS qa_agent_map (
 
 
 -- ----------------------------------------------------------------
---  6. QA_TRENDS
+--  7. QA_TRENDS
 --     One row per WF6 daily run using a 7-day rolling window.
 -- ----------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS qa_trends (
@@ -189,7 +189,7 @@ CREATE TABLE IF NOT EXISTS qa_trends (
 
 
 -- ----------------------------------------------------------------
---  7. QA_ACCURACY
+--  8. QA_ACCURACY
 --     Aggregated AI accuracy metrics derived from team leader feedback.
 --     WF7 inserts here after processing closed tickets.
 -- ----------------------------------------------------------------
@@ -208,7 +208,7 @@ CREATE TABLE IF NOT EXISTS qa_accuracy (
 
 
 -- ----------------------------------------------------------------
---  8. QA_DAILY_REPORTS
+--  9. QA_DAILY_REPORTS
 --     One row per daily report run. WF3 inserts here after sending.
 -- ----------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS qa_daily_reports (
@@ -226,7 +226,7 @@ CREATE TABLE IF NOT EXISTS qa_daily_reports (
 
 
 -- ----------------------------------------------------------------
---  9. QA_MONTHLY_REPORTS
+-- 10. QA_MONTHLY_REPORTS
 --     One row per calendar month. WF8 inserts here.
 -- ----------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS qa_monthly_reports (
@@ -403,9 +403,15 @@ CREATE POLICY "auth_read_qa_accuracy"           ON qa_accuracy           FOR SEL
 CREATE POLICY "auth_read_qa_daily_reports"      ON qa_daily_reports      FOR SELECT TO authenticated USING (true);
 CREATE POLICY "auth_read_qa_monthly_reports"    ON qa_monthly_reports    FOR SELECT TO authenticated USING (true);
 
--- Authenticated users can update tickets (feedback submission) and monthly reports (approval)
-CREATE POLICY "auth_update_qa_tickets"          ON qa_tickets           FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_update_qa_monthly_reports"  ON qa_monthly_reports   FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+-- Authenticated users can update tickets (feedback submission) — feedback_by must match the authenticated user
+CREATE POLICY "auth_update_qa_tickets"          ON qa_tickets           FOR UPDATE TO authenticated
+  USING (true)
+  WITH CHECK (feedback_by = auth.email());
+
+-- Authenticated users can update monthly reports (approval)
+CREATE POLICY "auth_update_qa_monthly_reports"  ON qa_monthly_reports   FOR UPDATE TO authenticated
+  USING (true)
+  WITH CHECK (true);
 
 
 -- ================================================================
@@ -421,11 +427,14 @@ CREATE POLICY "auth_update_qa_monthly_reports"  ON qa_monthly_reports   FOR UPDA
 CREATE OR REPLACE FUNCTION delete_old_conversations() RETURNS void AS $$
 BEGIN
   -- Delete raw conversation transcripts older than 90 days (contains PII)
+  -- Also purge rows with NULL collected_at to prevent PII from accumulating indefinitely
   DELETE FROM qa_conversations
-    WHERE collected_at < NOW() - INTERVAL '90 days';
+    WHERE collected_at < NOW() - INTERVAL '90 days'
+       OR collected_at IS NULL;
 
   DELETE FROM qa_bot_conversations
-    WHERE collected_at < NOW() - INTERVAL '90 days';
+    WHERE collected_at < NOW() - INTERVAL '90 days'
+       OR collected_at IS NULL;
 
   -- Note: qa_analysis, qa_tickets, qa_alerts, qa_trends, qa_accuracy,
   -- qa_daily_reports, and qa_monthly_reports are kept indefinitely

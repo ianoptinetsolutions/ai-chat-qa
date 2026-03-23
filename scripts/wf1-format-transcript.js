@@ -56,9 +56,8 @@ try {
   let firstClosedBy = null;
   let lastClosedBy = null;
 
-  // Process conversation parts
-  const parts = convo.conversation_parts?.conversation_parts || [];
-  for (const part of parts) {
+  // Process conversation parts (reuse allParts from above)
+  for (const part of allParts) {
     const authorType = part.author?.type;
 
     // Determine role label — include BOT messages for full conversation context
@@ -130,7 +129,8 @@ try {
   // AI / bot rating
   const aiAgent = convo.ai_agent || {};
   const finAiRatingUpdatedAt        = tsOrNull(aiAgent.rating_updated_at);
-  const lastChatbotRatingUpdatedAt  = tsOrNull(aiAgent.rating_updated_at);
+  // last_chatbot_rating_updated_at uses the same source field — kept for schema compatibility
+  const lastChatbotRatingUpdatedAt  = finAiRatingUpdatedAt;
   const lastChatbotRating           = aiAgent.rating  || null;
   const lastChatbotRatingRemark     = aiAgent.remark  || null;
   const lastChatbotRated            = aiAgent.rated_teammate?.name || null;

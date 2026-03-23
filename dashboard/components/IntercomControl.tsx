@@ -37,20 +37,18 @@ const TZ_GROUPS = [
 function toUTC(localTime: string, iana: string): string {
   if (iana === 'UTC') return localTime
   const [h, m] = localTime.split(':').map(Number)
-  // Build a date string in the target timezone, then read its UTC equivalent
-  const now = new Date()
-  const dateStr = now.toLocaleDateString('en-CA', { timeZone: iana }) // YYYY-MM-DD
-  const localDate = new Date(`${dateStr}T${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:00`)
-  // localDate is parsed as local browser time, but we need it in the given tz.
-  // Use Intl to get the offset of the target tz at that moment
+  // Determine the UTC offset of the target timezone by checking what it reads at midnight UTC
+  const refDateStr = new Date().toLocaleDateString('en-CA', { timeZone: 'UTC' })
+  const refUTC = new Date(`${refDateStr}T00:00:00Z`)
   const formatter = new Intl.DateTimeFormat('en', {
-    timeZone: iana, hour: 'numeric', minute: 'numeric', hour12: false,
+    timeZone: iana, hour: '2-digit', minute: '2-digit', hour12: false,
   })
-  const parts = formatter.formatToParts(localDate)
+  const parts = formatter.formatToParts(refUTC)
   const tzH = parseInt(parts.find(p => p.type === 'hour')?.value ?? '0')
   const tzM = parseInt(parts.find(p => p.type === 'minute')?.value ?? '0')
-  const diffMin = (h * 60 + m) - (tzH * 60 + tzM)
-  const utcMin = ((h * 60 + m) + diffMin + 1440) % 1440
+  // tzH:tzM is what the target timezone reads at midnight UTC, i.e. the UTC offset in hours/minutes
+  const offsetMin = tzH * 60 + tzM
+  const utcMin = ((h * 60 + m) - offsetMin + 1440) % 1440
   return `${String(Math.floor(utcMin / 60)).padStart(2,'0')}:${String(utcMin % 60).padStart(2,'0')}`
 }
 
@@ -236,6 +234,7 @@ export default function IntercomControl() {
     setTimezone(savedTz)
     const savedPin = sessionStorage.getItem('manager_pin')
     if (savedPin) { setPin(savedPin); setUnlocked(true); loadSchedule(savedTz) }
+    return () => { if (statusTimer.current) clearTimeout(statusTimer.current) }
   }, [])
 
   function showStatusMsg(type: 'success' | 'error', msg: string) {
