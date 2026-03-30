@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Lock, Unlock, Play, CheckCircle, XCircle, Eye, EyeOff, RefreshCw } from 'lucide-react'
+import { Lock, Unlock, Play, CheckCircle, XCircle, Eye, EyeOff, RefreshCw, Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
+import { format, subDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isFuture, getDay, addMonths, subMonths, isBefore, startOfDay } from 'date-fns'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Status = { type: 'success' | 'error'; msg: string } | null
@@ -214,6 +215,89 @@ function TimezonePicker({ value, onChange }: { value: string; onChange: (v: stri
   )
 }
 
+// ── Custom Date Picker ──────────────────────────────────────────────────────
+function DatePicker({ value, onChange, maxDate, minDate }: { value: Date; onChange: (d: Date) => void; maxDate?: Date; minDate?: Date }) {
+  const [open, setOpen] = useState(false)
+  const [viewMonth, setViewMonth] = useState(startOfMonth(value))
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => { setViewMonth(startOfMonth(value)) }, [value])
+
+  useEffect(() => {
+    function onOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onOutside)
+    return () => document.removeEventListener('mousedown', onOutside)
+  }, [])
+
+  const monthStart = startOfMonth(viewMonth)
+  const monthEnd = endOfMonth(viewMonth)
+  const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
+  const startPad = getDay(monthStart) // 0=Sun
+
+  const effectiveMax = maxDate ?? new Date()
+  const isDisabled = (d: Date) =>
+    isBefore(effectiveMax, startOfDay(d)) ||
+    (minDate ? isBefore(startOfDay(d), startOfDay(minDate)) : false)
+
+  return (
+    <div ref={ref} className="ic-custom-picker ic-date-picker" data-open={open ? 'true' : undefined}
+      onClick={() => setOpen(o => !o)}>
+      <div className="ic-picker-icon ic-date-icon">
+        <Calendar size={14} color="var(--green)" strokeWidth={2} />
+      </div>
+      <div className="ic-picker-display ic-date-display">{format(value, 'MMM dd, yyyy')}</div>
+      <div className="ic-picker-chevron">
+        <svg className="ic-chevron-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </div>
+      {open && (
+        <div className="ic-picker-panel ic-cal-panel" onClick={e => e.stopPropagation()}>
+          <div className="ic-cal-header">
+            <button className="ic-cal-nav" onClick={() => setViewMonth(m => subMonths(m, 1))} type="button">
+              <ChevronLeft size={14} strokeWidth={2} />
+            </button>
+            <span className="ic-cal-title">{format(viewMonth, 'MMMM yyyy')}</span>
+            <button className="ic-cal-nav" onClick={() => {
+              const next = addMonths(viewMonth, 1)
+              if (!isFuture(startOfMonth(next))) setViewMonth(next)
+            }} type="button"
+              disabled={isFuture(startOfMonth(addMonths(viewMonth, 1)))}>
+              <ChevronRight size={14} strokeWidth={2} />
+            </button>
+          </div>
+          <div className="ic-cal-weekdays">
+            {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
+              <div key={d} className="ic-cal-wd">{d}</div>
+            ))}
+          </div>
+          <div className="ic-cal-grid">
+            {Array.from({ length: startPad }).map((_, i) => (
+              <div key={`pad-${i}`} className="ic-cal-day ic-cal-day--empty" />
+            ))}
+            {days.map(day => {
+              const selected = isSameDay(day, value)
+              const today = isSameDay(day, new Date())
+              const disabled = isDisabled(day)
+              return (
+                <div key={day.toISOString()}
+                  className={`ic-cal-day${selected ? ' ic-cal-day--selected' : ''}${today ? ' ic-cal-day--today' : ''}${disabled ? ' ic-cal-day--disabled' : ''}`}
+                  onClick={() => {
+                    if (!disabled) { onChange(day); setOpen(false) }
+                  }}>
+                  {format(day, 'd')}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function IntercomControl() {
   const [unlocked, setUnlocked]     = useState(false)
@@ -225,6 +309,11 @@ export default function IntercomControl() {
   const [timezone, setTimezone]     = useState('UTC')
   const [saving, setSaving]         = useState(false)
   const [triggering, setTriggering] = useState(false)
+  const [collecting, setCollecting] = useState(false)
+  const [dateMode, setDateMode]     = useState<'single' | 'range'>('single')
+  const [singleDate, setSingleDate] = useState(() => subDays(new Date(), 1))
+  const [dateFrom, setDateFrom]     = useState(() => subDays(new Date(), 7))
+  const [dateTo, setDateTo]         = useState(() => subDays(new Date(), 1))
   const [status, setStatus]         = useState<Status>(null)
   const pinRef = useRef<HTMLInputElement>(null)
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -305,6 +394,30 @@ export default function IntercomControl() {
       showStatusMsg('success', 'Fetch triggered successfully')
     } catch { showStatusMsg('error', 'Network error') }
     finally { setTriggering(false) }
+  }
+
+  async function handleCollect() {
+    const from = dateMode === 'single' ? singleDate : dateFrom
+    const to = dateMode === 'single' ? singleDate : dateTo
+    if (isBefore(to, from)) { showStatusMsg('error', '"To" date cannot be before "From" date'); return }
+    setCollecting(true)
+    try {
+      const res = await fetch('/api/intercom/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pin,
+          dateFrom: format(from, 'yyyy-MM-dd'),
+          dateTo: format(to, 'yyyy-MM-dd'),
+        }),
+      })
+      if (!res.ok) { showStatusMsg('error', 'Collection failed'); return }
+      const label = dateMode === 'single'
+        ? format(singleDate, 'MMM dd, yyyy')
+        : `${format(dateFrom, 'MMM dd')} – ${format(dateTo, 'MMM dd, yyyy')}`
+      showStatusMsg('success', `Collection triggered for ${label}`)
+    } catch { showStatusMsg('error', 'Network error') }
+    finally { setCollecting(false) }
   }
 
   return (
@@ -516,6 +629,92 @@ export default function IntercomControl() {
         .ic-tz-abbr { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text-muted); margin-left: auto; padding-left: 10px; white-space: nowrap; }
         .ic-tz-dot  { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-left: 8px; }
 
+        /* ── Date picker variant ── */
+        .ic-date-picker:hover,
+        .ic-date-picker[data-open] { border-color: rgba(16,185,129,0.5); }
+        .ic-date-picker[data-open] { box-shadow: 0 0 0 2.5px rgba(16,185,129,0.1); }
+        .ic-date-icon { background: rgba(16,185,129,0.05); }
+        .ic-date-display { min-width: 108px; }
+        .ic-date-picker .ic-picker-chevron { color: var(--text-muted); }
+        .ic-date-picker[data-open] .ic-picker-chevron { color: var(--green); }
+
+        /* ── Mode toggle ── */
+        .ic-mode-toggle {
+          display: inline-flex; height: 28px; border-radius: 6px;
+          border: 1px solid var(--border-bright); background: var(--bg-base);
+          overflow: hidden; flex-shrink: 0;
+        }
+        .ic-mode-btn {
+          font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500;
+          color: var(--text-muted); background: transparent; border: none;
+          padding: 0 10px; cursor: pointer; transition: all 0.15s;
+          white-space: nowrap;
+        }
+        .ic-mode-btn:not(:last-child) { border-right: 1px solid var(--border); }
+        .ic-mode-btn:hover { color: var(--text-secondary); background: var(--bg-hover); }
+        .ic-mode-btn--active {
+          color: var(--green); background: rgba(16,185,129,0.1); font-weight: 700;
+        }
+
+        /* ── Calendar panel ── */
+        .ic-cal-panel {
+          min-width: 260px; padding: 10px;
+        }
+        .ic-cal-header {
+          display: flex; align-items: center; justify-content: space-between;
+          margin-bottom: 8px;
+        }
+        .ic-cal-title {
+          font-family: 'Space Grotesk', sans-serif; font-size: 13px;
+          font-weight: 600; color: var(--text-primary);
+        }
+        .ic-cal-nav {
+          display: flex; align-items: center; justify-content: center;
+          width: 26px; height: 26px; border-radius: 5px;
+          background: transparent; border: 1px solid var(--border);
+          color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+        }
+        .ic-cal-nav:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-bright); }
+        .ic-cal-nav:disabled { opacity: 0.3; cursor: not-allowed; }
+        .ic-cal-weekdays {
+          display: grid; grid-template-columns: repeat(7, 1fr); gap: 0;
+          margin-bottom: 4px;
+        }
+        .ic-cal-wd {
+          font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+          font-weight: 600; color: var(--text-muted); text-align: center;
+          padding: 4px 0; text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .ic-cal-grid {
+          display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+        }
+        .ic-cal-day {
+          font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+          color: var(--text-secondary); text-align: center; padding: 6px 0;
+          border-radius: 5px; cursor: pointer; transition: all 0.1s;
+          position: relative;
+        }
+        .ic-cal-day:hover:not(.ic-cal-day--disabled):not(.ic-cal-day--empty) {
+          background: var(--bg-hover); color: var(--text-primary);
+        }
+        .ic-cal-day--selected {
+          background: rgba(16,185,129,0.18); color: var(--green); font-weight: 700;
+        }
+        .ic-cal-day--selected:hover { background: rgba(16,185,129,0.25); }
+        .ic-cal-day--today::after {
+          content: ''; position: absolute; bottom: 2px; left: 50%;
+          transform: translateX(-50%); width: 4px; height: 4px;
+          border-radius: 50%; background: var(--accent);
+        }
+        .ic-cal-day--disabled {
+          color: var(--text-muted); opacity: 0.3; cursor: not-allowed;
+        }
+        .ic-cal-day--empty { cursor: default; }
+
+        /* ── Collect button ── */
+        .ic-btn-collect { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: var(--green); }
+        .ic-btn-collect:hover { background: rgba(16,185,129,0.2); }
+
         /* ── Status toast ── */
         .ic-status {
           display: flex; align-items: center; gap: 6px; padding: 7px 22px;
@@ -527,7 +726,7 @@ export default function IntercomControl() {
         .ic-status-error   { color: var(--critical); background: rgba(244,63,94,0.06); }
 
         /* ── Wrapper divs (transparent on desktop) ── */
-        .ic-meta, .ic-pin-row, .ic-schedule-row, .ic-action-row { display: contents; }
+        .ic-meta, .ic-pin-row, .ic-schedule-row, .ic-date-row, .ic-action-row { display: contents; }
 
         /* ── Animations ── */
         @keyframes ic-shake {
@@ -563,11 +762,20 @@ export default function IntercomControl() {
           }
           .ic-schedule-row .ic-custom-picker { flex: 1; min-width: 0; }
 
+          .ic-date-row {
+            display: flex; align-items: center; gap: 6px; width: 100%;
+            flex-wrap: wrap;
+          }
+          .ic-date-row .ic-custom-picker { flex: 1; min-width: 0; }
+          .ic-date-row .ic-mode-toggle { width: 100%; }
+          .ic-date-row .ic-mode-btn { flex: 1; text-align: center; }
+
           .ic-action-row {
-            display: flex; gap: 6px; width: 100%;
+            display: flex; gap: 6px; width: 100%; flex-wrap: wrap;
           }
           .ic-action-row .ic-btn {
             flex: 1; justify-content: center; margin-left: 0;
+            min-width: calc(50% - 3px);
           }
         }
       `}</style>
@@ -622,6 +830,27 @@ export default function IntercomControl() {
                 <TimePicker value={scheduleTime} onChange={setScheduleTime} />
                 <TimezonePicker value={timezone} onChange={setTimezone} />
               </div>
+              <div className="ic-date-row">
+                <span className="ic-field-label">Collect data</span>
+                <div className="ic-mode-toggle">
+                  <button className={`ic-mode-btn${dateMode === 'single' ? ' ic-mode-btn--active' : ''}`}
+                    onClick={() => setDateMode('single')} type="button">Single Date</button>
+                  <button className={`ic-mode-btn${dateMode === 'range' ? ' ic-mode-btn--active' : ''}`}
+                    onClick={() => setDateMode('range')} type="button">Date Range</button>
+                </div>
+                {dateMode === 'single' ? (
+                  <DatePicker value={singleDate} onChange={setSingleDate} maxDate={new Date()} />
+                ) : (
+                  <>
+                    <DatePicker value={dateFrom} onChange={d => {
+                      setDateFrom(d)
+                      if (isBefore(dateTo, d)) setDateTo(d)
+                    }} maxDate={new Date()} />
+                    <span className="ic-field-label">to</span>
+                    <DatePicker value={dateTo} onChange={setDateTo} maxDate={new Date()} minDate={dateFrom} />
+                  </>
+                )}
+              </div>
               <div className="ic-action-row">
                 <button className="ic-btn ic-btn-save" onClick={handleSave} disabled={saving}>
                   {saving
@@ -634,6 +863,12 @@ export default function IntercomControl() {
                     ? <RefreshCw size={14} strokeWidth={2} style={{ animation: 'spin 1s linear infinite' }} />
                     : <Play size={14} strokeWidth={2} />}
                   Trigger Now
+                </button>
+                <button className="ic-btn ic-btn-collect" onClick={handleCollect} disabled={collecting}>
+                  {collecting
+                    ? <RefreshCw size={14} strokeWidth={2} style={{ animation: 'spin 1s linear infinite' }} />
+                    : <Calendar size={14} strokeWidth={2} />}
+                  Collect
                 </button>
                 <button className="ic-btn ic-btn-lock" onClick={handleLock}>
                   <Lock size={14} strokeWidth={2} />
